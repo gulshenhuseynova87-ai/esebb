@@ -1,0 +1,8 @@
+# Vercel yalnız saytın faylarını dərc etsin (README, .py, .sql və s. açıq olmasın)
+/*
+!index.html
+!admin.html
+!exam_data.js
+!sha256.js
+!generate-env.js
+!vercel.json

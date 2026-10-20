@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İmtahan rəhbərinin paneli — SDF 1 | Bakı Mühəndislik Universiteti</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Serif:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+    <script src="env.js"></script>
+    <script src="sha256.js"></script>
+    <style>
+        :root {
+            --navy: #14305a;
+            --navy-dark: #0e2343;
+            --gold: #a8873a;
+            --bg: #f2f3f5;
+            --paper: #ffffff;
+            --text: #1b1f24;
+            --muted: #5a6370;
+            --border: #c8cdd4;
+            --border-light: #e1e4e8;
+            --success: #1d6b3a;
+            --danger: #9b1c1c;
+            --warning: #8a5a00;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Noto Sans', 'Segoe UI', Arial, sans-serif; font-size: 14.5px; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+        h1, h2, h3, h4 { font-family: 'Noto Serif', Georgia, serif; color: var(--navy-dark); }
+
+        .uni-header { background: var(--navy); color: #fff; border-bottom: 3px solid var(--gold); }
+        .uni-header-inner { max-width: 1200px; margin: 0 auto; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .uni-name { font-family: 'Noto Serif', Georgia, serif; font-size: 17px; font-weight: 700; letter-spacing: 0.06em; }
+        .uni-sub { font-size: 12.5px; opacity: 0.85; margin-top: 2px; }
+        .uni-course { font-size: 13px; text-align: right; opacity: 0.95; line-height: 1.4; }
+
+        .container { max-width: 1200px; width: 100%; margin: 22px auto; padding: 0 20px; flex: 1; }
+
+        .panel { background: var(--paper); border: 1px solid var(--border); border-radius: 2px; margin-bottom: 18px; }
+        .panel-head { border-bottom: 1px solid var(--border-light); padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .panel-head h2 { font-size: 18px; }
+        .panel-body { padding: 16px 18px; }
+        .subtitle { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+        .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .btn { font: inherit; font-weight: 600; font-size: 13.5px; padding: 8px 16px; border-radius: 2px; border: 1px solid var(--navy); background: var(--navy); color: #fff; cursor: pointer; }
+        .btn:hover { background: var(--navy-dark); }
+        .btn-outline { background: #fff; color: var(--navy); }
+        .btn-outline:hover { background: #eef1f6; }
+        .btn-sm { padding: 4px 10px; font-size: 12.5px; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); border: 1px solid var(--border); background: var(--paper); margin-bottom: 18px; }
+        .stat-card { padding: 12px 16px; border-right: 1px solid var(--border-light); }
+        .stat-card:last-child { border-right: none; }
+        .stat-title { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+        .stat-val { font-size: 22px; font-weight: 700; }
+
+        .table-wrap { overflow-x: auto; background: var(--paper); border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { background: #f4f5f7; padding: 9px 12px; text-align: left; font-weight: 600; font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 1px solid var(--border); white-space: nowrap; }
+        td { padding: 9px 12px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+        tbody tr:hover { background: #f8f9fb; }
+
+        .badge-status { display: inline-block; padding: 2px 8px; font-size: 12px; font-weight: 600; border: 1px solid; white-space: nowrap; }
+        .status-ok { color: var(--success); border-color: #a9cdb5; background: #eef6f0; }
+        .status-danger { color: var(--danger); border-color: #e2b4b4; background: #fbefef; }
+        .status-warning { color: var(--warning); border-color: #e3cf9f; background: #fbf5e6; }
+
+        .notice { padding: 10px 14px; font-size: 13.5px; margin-bottom: 16px; line-height: 1.5; display: none; border: 1px solid; border-left-width: 4px; }
+        .notice.warn { display: block; background: #fbf5e6; border-color: #e3cf9f; color: #5c3d00; }
+        .notice.err { display: block; background: #fbefef; border-color: #e2b4b4; color: var(--danger); }
+        .flag { color: var(--warning); font-weight: 600; font-size: 12px; }
+        .mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+        .muted { color: var(--muted); }
+
+        .modal { position: fixed; inset: 0; background: rgba(14, 35, 67, 0.6); display: none; justify-content: center; align-items: center; z-index: 100; padding: 16px; }
+        .modal-content { background: var(--paper); border-top: 4px solid var(--navy); max-width: 720px; width: 100%; max-height: 88vh; overflow-y: auto; padding: 22px 24px; }
+        .modal-content h3 { font-size: 18px; }
+        .modal-content h4 { font-size: 15px; margin: 14px 0 8px; }
+        .modal-content p { margin-bottom: 4px; }
+        .grid-scores { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 4px; margin-bottom: 8px; }
+        .grid-scores div { padding: 4px 8px; font-size: 13px; border: 1px solid var(--border-light); }
+        .grid-scores .full { background: #eef6f0; }
+        .grid-scores .zero { background: #fbefef; }
+        .answer-pre { background: #f6f7f9; border: 1px solid var(--border-light); padding: 6px 10px; margin-top: 2px; white-space: pre-wrap; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+        .log-list { padding-left: 18px; margin-bottom: 8px; font-size: 13.5px; }
+
+        .login-box { max-width: 420px; margin: 60px auto; }
+        .field label { display: block; font-size: 13.5px; font-weight: 600; margin-bottom: 5px; }
+        .field input { width: 100%; padding: 9px 11px; font: inherit; border: 1px solid var(--border); border-radius: 2px; }
+        .field input:focus { outline: 2px solid var(--navy); outline-offset: -1px; }
+
+        tr.annulled td { color: var(--muted); text-decoration: line-through; }
+        tr.annulled td:last-child, tr.annulled td:nth-last-child(2) { text-decoration: none; }
+        .status-muted { color: var(--muted); border-color: var(--border); background: #f4f5f7; }
+        .modal-actions { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+        .btn-danger { background: var(--danger); border-color: var(--danger); }
+        .btn-danger:hover { background: #7f1616; }
+        .seat.live { border-left-color: var(--navy); background: #eef2f8; cursor: pointer; }
+        .seat.live.stale { border-left-color: var(--warning); }
+        .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--success); margin-right: 5px; vertical-align: 1px; }
+        .live-dot.off { background: var(--warning); }
+        .live-head { display: flex; align-items: center; gap: 8px; }
+        .rt-status { font-size: 12.5px; color: var(--muted); }
+        .rt-status b { color: var(--success); }
+        .test-ok { color: var(--success); font-weight: 600; }
+        .test-bad { color: var(--danger); font-weight: 600; }
+        .roster { display: grid; grid-template-columns: repeat(5, minmax(150px, 1fr)); gap: 10px; }
+        .roster-col h4 { font-family: 'Noto Sans', sans-serif; font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px; }
+        .seat { border: 1px solid var(--border-light); border-left-width: 4px; padding: 6px 9px; margin-bottom: 6px; font-size: 13px; min-height: 52px; cursor: default; }
+        .seat .no { font-weight: 700; color: var(--navy); }
+        .seat .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .seat.empty { border-style: dashed; border-left-style: solid; border-left-color: var(--border); color: var(--muted); background: #fafbfc; }
+        .seat.done { border-left-color: var(--success); background: #f6fbf7; cursor: pointer; }
+        .seat.out { border-left-color: var(--danger); background: #fdf6f6; cursor: pointer; }
+        .seat.late { border-left-color: var(--warning); background: #fdfaf2; cursor: pointer; }
+        .seat.dup { outline: 2px solid var(--warning); }
+        .roster-summary { font-size: 13.5px; margin-bottom: 12px; line-height: 1.6; }
+        @media (max-width: 800px) { .roster { grid-template-columns: repeat(2, 1fr); } }
+        .uni-footer { text-align: center; font-size: 12px; color: var(--muted); padding: 18px 16px 24px; }
+
+        @media (max-width: 700px) { .uni-course { text-align: left; } }
+    </style>
+</head>
+<body>
+
+    <header class="uni-header">
+        <div class="uni-header-inner">
+            <div>
+                <div class="uni-name">BAKI MÜHƏNDİSLİK UNİVERSİTETİ</div>
+                <div class="uni-sub">İnformasiya və kompüter texnologiyaları fakültəsi · Kompüter mühəndisliyi</div>
+            </div>
+            <div class="uni-course">Verilənlərin strukturu və alqoritmlər · 2-ci kurs — SDF 1<br>İmtahan rəhbərinin paneli</div>
+        </div>
+    </header>
+
+    <!-- GİRİŞ -->
+    <main id="auth-gate" class="container">
+        <div class="panel login-box">
+            <div class="panel-head"><h2>İmtahan rəhbərinin girişi</h2></div>
+            <div class="panel-body">
+                <form onsubmit="handleAdminLogin(event)">
+                    <div class="field" style="margin-bottom: 14px;">
+                        <label for="admin-pass-input">Şifrə</label>
+                        <input type="password" id="admin-pass-input" autofocus required autocomplete="current-password">
+                    </div>
+                    <div id="auth-error-msg" style="display: none; color: var(--danger); font-size: 13px; font-weight: 600; margin-bottom: 12px;"></div>
+                    <button type="submit" class="btn" style="width: 100%; padding: 10px;">Daxil ol</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- NƏTİCƏLƏR (yalnız şifrədən sonra) -->
+    <main id="admin-dashboard" class="container" style="display: none;">
+        <div class="panel">
+            <div class="panel-head">
+                <div>
+                    <h2>İmtahan nəticələri</h2>
+                    <div class="subtitle"><span id="last-refresh">yüklənir…</span></div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn" onclick="exportToCSV()">Excel-ə yüklə (CSV)</button>
+                    <button class="btn btn-outline" onclick="fetchResults()">Yenilə</button>
+                    <button class="btn btn-outline" onclick="logoutAdmin()">Çıxış</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="notice" class="notice"></div>
+
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-title">Nəticə göndərən tələbələr</div><div class="stat-val" id="total-count">0</div></div>
+            <div class="stat-card"><div class="stat-title">Orta bal</div><div class="stat-val" id="avg-score">—</div></div>
+            <div class="stat-card"><div class="stat-title">Tamamlayanlar</div><div class="stat-val" style="color: var(--success);" id="success-count">0</div></div>
+            <div class="stat-card"><div class="stat-title">Hazırda işləyir</div><div class="stat-val" style="color: var(--navy);" id="live-count">0</div></div>
+            <div class="stat-card"><div class="stat-title">Kənarlaşdırılanlar</div><div class="stat-val" style="color: var(--danger);" id="failed-count">0</div></div>
+            <div class="stat-card"><div class="stat-title">Variantlar (A / B / C / D / E)</div><div class="stat-val mono" style="font-size: 18px;" id="variant-counts">0 / 0 / 0 / 0 / 0</div></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <h2>Sıra nömrələri (1–35)</h2>
+                <span class="muted" style="font-size: 13px;">Hər sütun bir variantdır · nömrəyə klikləyərək ətraflı baxın</span>
+            </div>
+            <div class="panel-body">
+                <div id="roster-summary" class="roster-summary"></div>
+                <div id="roster" class="roster"></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <div class="live-head"><h2>Hazırda imtahan yazanlar</h2></div>
+                <span class="muted" style="font-size: 13px;">Cavablar, xəbərdarlıqlar və «Kodu yoxla» nəticələri canlı yenilənir</span>
+            </div>
+            <div class="table-wrap" style="border: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Bağlantı</th>
+                            <th>Sıra №</th>
+                            <th>Ad və soyad</th>
+                            <th>Variant</th>
+                            <th>Hazırkı tapşırıq</th>
+                            <th>Qalan vaxt</th>
+                            <th>Cavablanıb</th>
+                            <th>Kodu yoxla</th>
+                            <th>Xəbərdarlıq</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="live-body">
+                        <tr><td colspan="10" style="text-align: center; padding: 24px; color: var(--muted);">Hazırda imtahan yazan tələbə yoxdur.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Vaxt</th>
+                        <th>Sıra №</th>
+                        <th>Ad və soyad</th>
+                        <th>Kurs</th>
+                        <th>Variant</th>
+                        <th>Bal</th>
+                        <th>Xəbərdarlıq</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <tr><td colspan="9" style="text-align: center; padding: 32px; color: var(--muted);">Nəticələr yüklənir…</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="detail-modal" class="modal" onclick="if (event.target === this) closeModal()">
+            <div class="modal-content">
+                <h3 id="modal-title" style="margin-bottom: 12px;"></h3>
+                <div id="modal-body" style="font-size: 13.5px; line-height: 1.6;"></div>
+                <div class="modal-actions">
+                    <button id="reset-btn" class="btn btn-danger" onclick="resetStudent()">Yenidən başlat (nəticəni ləğv et)</button>
+                    <button id="release-btn" class="btn btn-danger" style="display: none;" onclick="releaseLive()">İmtahanı dayandır və nömrəni azad et</button>
+                    <button class="btn" onclick="closeModal()">Bağla</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="uni-footer">© Bakı Mühəndislik Universiteti · Versiya: VSA-2026-10-20 (Verilənlərin strukturu və alqoritmlər)</footer>
+
+    <script>
+        // ====================================================================
+        // KONFİQURASİYA
+        // ====================================================================
+        const SUPABASE_URL = (window.__ENV && window.__ENV.SUPABASE_URL) || localStorage.getItem("exam_supabase_url") || "";
+        const SUPABASE_ANON_KEY = (window.__ENV && window.__ENV.SUPABASE_ANON_KEY) || localStorage.getItem("exam_supabase_key") || "";
+
+        // Müəllim şifrəsinin SHA-256 heşi (env.js və ya localStorage-dən oxunur)
+        const ADMIN_HASH = (window.__ENV && window.__ENV.ADMIN_PASSWORD_HASH) || localStorage.getItem("exam_admin_hash") || "";
+        const VARIANTS = ["A", "B", "C", "D", "E"];
+        const TASK_IDS = ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10"];
+        const REFRESH_MS = 5000;
+        const GROUP_SIZE = 35;   // index.html ilə eyni: sıra 1–35, variant = (sıra - 1) % 5 (hər varianta 7 nəfər)
+
+        let supabaseClient = null;
+        try {
+            if (SUPABASE_URL.startsWith("http") && window.supabase) {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+        } catch (e) {}
+
+        let adminPassword = null;   // yalnız yaddaşda saxlanılır (sessionStorage/localStorage-a yazılmır)
+        let submissions = [];
+        let liveRows = [];          // exam_live: imtahan gedərkən tələbələrin canlı vəziyyəti
+        let liveChannel = null;     // Supabase Realtime kanalı (dərhal yeniləmə siqnalları)
+        let realtimeOn = false;
+        const EXAM_DURATION_MS = 80 * 60 * 1000;
+        const STALE_MS = 45000;     // 45 saniyə siqnal yoxdursa: bağlantı itib / səhifə bağlanıb
+        let refreshTimer = null;
+        let failedAttempts = 0;
+
+        const $ = (id) => document.getElementById(id);
+        function esc(s) {
+            return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+        }
+
+        // ====================================================================
+        // GİRİŞ
+        // ====================================================================
+        function handleAdminLogin(e) {
+            if (e) e.preventDefault();
+            const input = $("admin-pass-input").value.trim();
+            const errDiv = $("auth-error-msg");
+
+            if (ADMIN_HASH) {
+                if (sha256Hex(input) === ADMIN_HASH) {
+                    adminPassword = input;
+                    $("admin-pass-input").value = "";
+                    unlockDashboard();
+                    return;
+                }
+            } else {
+                adminPassword = input;
+                $("admin-pass-input").value = "";
+                unlockDashboard();
+                return;
+            }
+            failedAttempts++;
+            errDiv.style.display = "block";
+            errDiv.textContent = `Yanlış şifrə! (${failedAttempts}/3 cəhd)`;
+            $("admin-pass-input").value = "";
+            if (failedAttempts >= 3) {
+                alert("Giriş qadağandır! Əsas imtahan səhifəsinə yönləndirilirsiniz.");
+                window.location.href = "index.html";
+            }
+        }
+
+        // Realtime: tələbə hər dəfə vəziyyət göndərəndə "changed" siqnalı gəlir → panel dərhal yenilənir.
+        // Siqnalda heç bir şəxsi məlumat yoxdur; məlumat yalnız şifrə ilə qorunan funksiyalardan oxunur.
+        let fetchSoonTimer = null;
+        function fetchSoon() {
+            clearTimeout(fetchSoonTimer);
+            fetchSoonTimer = setTimeout(fetchResults, 300);
+        }
+
+        function setupRealtime() {
+            if (!supabaseClient || liveChannel) return;
+            try {
+                liveChannel = supabaseClient.channel("sdf1-live", { config: { broadcast: { self: false } } });
+                liveChannel.on("broadcast", { event: "changed" }, fetchSoon);
+                liveChannel.subscribe((status) => {
+                    realtimeOn = status === "SUBSCRIBED";
+                    updateRefreshLabel();
+                });
+            } catch (e) {
+                liveChannel = null;
+            }
+        }
+
+        let lastRefreshAt = null;
+        function updateRefreshLabel() {
+            if (!supabaseClient) return;
+            const t = lastRefreshAt ? lastRefreshAt.toLocaleTimeString("az-AZ") : "—";
+            $("last-refresh").innerHTML = realtimeOn
+                ? `<span class="rt-status"><span class="live-dot"></span><b>Canlı rejim</b> · dəyişikliklər dərhal görünür · son yenilənmə ${esc(t)}</span>`
+                : `<span class="rt-status"><span class="live-dot off"></span>Canlı kanala qoşulur… · hər 5 saniyədən bir yenilənir · son yenilənmə ${esc(t)}</span>`;
+        }
+
+        function unlockDashboard() {
+            $("auth-gate").style.display = "none";
+            $("admin-dashboard").style.display = "block";
+            setupRealtime();
+            fetchResults();
+            clearInterval(refreshTimer);
+            refreshTimer = setInterval(fetchResults, REFRESH_MS);
+        }
+
+        function logoutAdmin() {
+            adminPassword = null;
+            submissions = [];
+            location.reload();
+        }
+
+        // ====================================================================
+        // MƏLUMATLARIN ÇƏKİLMƏSİ (yalnız şifrədən sonra)
+        // ====================================================================
+        function setNotice(kind, html) {
+            const n = $("notice");
+            n.className = kind ? `notice ${kind}` : "notice";
+            n.innerHTML = html || "";
+        }
+
+        async function fetchResults() {
+            if (!adminPassword) return;
+
+            if (!supabaseClient) {
+                submissions = JSON.parse(localStorage.getItem("exam_local_submissions") || "[]").reverse();
+                setNotice("warn", "Supabase qoşulmayıb — yalnız bu brauzerdə saxlanılan nəticələr göstərilir.");
+                $("last-refresh").textContent = "Lokal rejim";
+                renderTable();
+                return;
+            }
+
+            try {
+                const [res, live] = await Promise.all([
+                    supabaseClient.rpc("admin_list_submissions", { p_password: adminPassword }),
+                    supabaseClient.rpc("admin_list_live", { p_password: adminPassword }),
+                ]);
+                const { data, error } = res;
+                liveRows = live.error ? [] : (live.data || []);
+                if (!error) {
+                    submissions = data || [];
+                    setNotice("", "");
+                    if (live.error && /could not find the function/i.test(live.error.message || "")) {
+                        setNotice("warn", "Canlı izləmə üçün <code>supabase_setup.sql</code> faylını Supabase → SQL Editor-da yenidən işlədin.");
+                    }
+                } else if (error.code === "PGRST202" || /could not find the function/i.test(error.message || "")) {
+                    // supabase_setup.sql hələ yenilənməyib — köhnə üsulla oxu
+                    const legacy = await supabaseClient.from("exam_submissions").select("*").order("created_at", { ascending: false });
+                    if (legacy.error) throw legacy.error;
+                    submissions = legacy.data || [];
+                    setNotice("warn", "<b>Təhlükəsizlik yeniləməsi tətbiq edilməyib.</b> Hazırda anon açarı olan hər kəs (tələbələr də) nəticələri oxuya bilər. " +
+                        "Düzəltmək üçün <code>supabase_setup.sql</code> faylını Supabase → SQL Editor-da yenidən işlədin.");
+                } else if (error.code === "28P01") {
+                    setNotice("err", "Server şifrəni qəbul etmədi. <code>supabase_setup.sql</code>-dəki heş ilə admin.html-dəki ADMIN_HASH eyni olmalıdır.");
+                    return;
+                } else {
+                    throw error;
+                }
+            } catch (err) {
+                console.error("Supabase oxuma xətası:", err);
+                setNotice("err", "Bazaya qoşulmaq alınmadı: " + esc(err.message || err) + " — sistem avtomatik yenidən cəhd edəcək.");
+                return;
+            }
+            lastRefreshAt = new Date();
+            updateRefreshLabel();
+            renderTable();
+        }
+
+        // ====================================================================
+        // CƏDVƏL
+        // ====================================================================
+        function scoresOf(sub) {
+            const b = sub.breakdown || {};
+            const raw = b.scores || b; // köhnə formatda bal birbaşa breakdown-da idi
+            const out = {};
+            for (const [k, v] of Object.entries(raw)) {
+                if (typeof v === "number") out[k] = v;
+            }
+            return out;
+        }
+
+        function expectedVariant(sira) {
+            const n = parseInt(sira, 10);
+            return Number.isFinite(n) && n >= 1 ? VARIANTS[(n - 1) % 5] : null;
+        }
+
+        function issuesOf(sub, dupKeys) {
+            const issues = [];
+            const exp = expectedVariant(sub.student_id);
+            const letter = String(sub.variant || "").replace("Variant ", "");
+            if (exp && letter && exp !== letter) issues.push(`variant ${letter}, gözlənilən ${exp}`);
+            if (dupKeys.has(`${sub.student_group}|${sub.student_id}`)) issues.push("eyni sıra nömrəsi təkrarlanır");
+            const grading = (sub.breakdown || {}).grading;
+            if (grading && grading.startsWith("qismən")) issues.push("kod tapşırıqları yoxlanmayıb");
+            return issues;
+        }
+
+        const isAnnulled = (s) => !!s.annulled_at;
+        const activeSubs = () => submissions.filter(s => !isAnnulled(s));
+
+        function renderTable() {
+            const tbody = $("table-body");
+            const active = activeSubs();
+            const counts = { A: 0, B: 0, C: 0, D: 0, E: 0 };
+            let totalScore = 0, successCount = 0, failedCount = 0;
+
+            const seen = new Map();
+            for (const s of active) {
+                const k = `${s.student_group}|${s.student_id}`;
+                seen.set(k, (seen.get(k) || 0) + 1);
+            }
+            const dupKeys = new Set([...seen].filter(([k, n]) => n > 1 && !k.endsWith("|")).map(([k]) => k));
+
+            if (submissions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 30px; color: var(--muted);">Hələ nəticə yoxdur.</td></tr>';
+            } else {
+                tbody.innerHTML = submissions.map((sub, idx) => {
+                    const annulled = isAnnulled(sub);
+                    if (!annulled) {
+                        totalScore += Number(sub.score) || 0;
+                        if (sub.status === "TAMAMLANDI") successCount++;
+                        if (String(sub.status || "").includes("KƏNARLAŞDIRILDI")) failedCount++;
+                        const letter = String(sub.variant || "").replace("Variant ", "");
+                        if (letter in counts) counts[letter]++;
+                    }
+
+                    let statusBadge = `<span class="badge-status status-ok">Tamamlandı</span>`;
+                    if (String(sub.status || "").includes("KƏNARLAŞDIRILDI")) statusBadge = `<span class="badge-status status-danger">Kənarlaşdırıldı</span>`;
+                    else if (sub.status === "VAXT_BİTDİ") statusBadge = `<span class="badge-status status-warning">Vaxt bitdi</span>`;
+                    if (annulled) statusBadge = `<span class="badge-status status-muted">Ləğv edilib — yenidən başladıldı</span>`;
+
+                    const issues = annulled ? [] : issuesOf(sub, dupKeys);
+                    const timeStr = sub.created_at ? new Date(sub.created_at).toLocaleTimeString("az-AZ") : "--:--";
+                    const score = Number(sub.score) || 0;
+                    const maxScore = Number(sub.max_score) || 100;
+
+                    return `
+                        <tr${annulled ? ' class="annulled"' : ""}>
+                            <td class="mono muted">${esc(timeStr)}</td>
+                            <td class="mono">${esc(sub.student_id || "—")}</td>
+                            <td><b>${esc(sub.student_name)}</b>${issues.length ? `<div class="flag">Diqqət: ${esc(issues.join("; "))}</div>` : ""}</td>
+                            <td>${esc(sub.student_group)}</td>
+                            <td>${esc(String(sub.variant || "").replace("Variant ", ""))}</td>
+                            <td style="font-weight: 700; color: ${score >= 60 ? "var(--success)" : "var(--danger)"};">${score} / ${maxScore}</td>
+                            <td style="color: ${Number(sub.violations) > 0 ? "var(--danger)" : "inherit"};">${Number(sub.violations) || 0} / 3</td>
+                            <td>${statusBadge}</td>
+                            <td><button class="btn btn-outline btn-sm" onclick="viewDetails(${idx})">Ətraflı</button></td>
+                        </tr>`;
+                }).join("");
+            }
+
+            $("total-count").textContent = active.length;
+            $("avg-score").textContent = active.length ? (totalScore / active.length).toFixed(1) : "—";
+            $("success-count").textContent = successCount;
+            renderLive();
+            $("failed-count").textContent = failedCount;
+            $("variant-counts").textContent = VARIANTS.map(v => counts[v]).join(" / ");
+            renderRoster();
+        }
+
+        // ====================================================================
+        // CANLI İZLƏMƏ: hazırda imtahan yazanlar
+        // ====================================================================
+        function activeLive() {
+            // hər nömrə üçün ən son aktiv sessiya; nəticəsi artıq göndərilmiş nömrələr çıxarılır
+            const submitted = new Set(activeSubs().map(s => `${s.student_group}|${s.student_id}`));
+            const seen = new Set();
+            return liveRows.filter(l => {
+                const k = `${l.student_group}|${l.student_id}`;
+                if (l.state !== "active" || seen.has(k) || submitted.has(k)) return false;
+                if (Date.now() - new Date(l.started_at).getTime() > EXAM_DURATION_MS + 10 * 60000) return false;
+                seen.add(k);
+                return true;
+            });
+        }
+
+        function liveInfo(l) {
+            const prog = l.progress || {};
+            const tested = prog.tested || {};
+            const okN = Object.values(tested).filter(Boolean).length;
+            const left = Math.max(0, EXAM_DURATION_MS - (Date.now() - new Date(l.started_at).getTime()));
+            const ago = Math.round((Date.now() - new Date(l.last_seen).getTime()) / 1000);
+            return {
+                current: prog.current || "—",
+                left: `${Math.floor(left / 60000)} dəq`,
+                answered: `${prog.answered ?? 0} / ${prog.total ?? 20}`,
+                tested: Object.keys(tested).length ? `${okN} düz / ${Object.keys(tested).length - okN} səhv` : "—",
+                online: ago * 1000 < STALE_MS,
+                ago,
+            };
+        }
+
+        function renderLive() {
+            const rows = activeLive();
+            $("live-count").textContent = rows.length;
+            $("live-body").innerHTML = rows.length ? rows.map(l => {
+                const i = liveInfo(l);
+                const idx = liveRows.indexOf(l);
+                return `<tr>
+                    <td>${i.online ? '<span class="live-dot"></span>onlayn' : `<span class="live-dot off"></span><span style="color: var(--warning);">${i.ago} san. siqnal yoxdur</span>`}</td>
+                    <td class="mono">${esc(l.student_id)}</td>
+                    <td><b>${esc(l.student_name)}</b></td>
+                    <td>${esc(String(l.variant).replace("Variant ", ""))}</td>
+                    <td><b>${esc(i.current)}</b></td>
+                    <td class="mono">${i.left}</td>
+                    <td>${i.answered}</td>
+                    <td>${i.tested}</td>
+                    <td style="color: ${l.violations > 0 ? "var(--danger)" : "inherit"};">${l.violations} / 3</td>
+                    <td><button class="btn btn-outline btn-sm" onclick="viewLive(${idx})">Bax</button></td>
+                </tr>`;
+            }).join("") : '<tr><td colspan="10" style="text-align: center; padding: 24px; color: var(--muted);">Hazırda imtahan yazan tələbə yoxdur.</td></tr>';
+        }
+
+        function viewLive(idx) {
+            const l = liveRows[idx];
+            if (!l) return;
+            openedIdx = null;
+            $("reset-btn").style.display = "none";
+            openedLiveIdx = idx;
+            $("release-btn").style.display = supabaseClient && l.state === "active" ? "" : "none";
+            const i = liveInfo(l);
+            const prog = l.progress || {};
+            $("modal-title").textContent = `${l.student_name} (sıra ${l.student_id}) — ${l.variant} · imtahan davam edir`;
+
+            let html = `<p><b>Başladı:</b> ${esc(new Date(l.started_at).toLocaleTimeString("az-AZ"))} &nbsp;|&nbsp; <b>Qalan vaxt:</b> ${i.left} &nbsp;|&nbsp; ` +
+                `<b>Bağlantı:</b> ${i.online ? "onlayn" : `${i.ago} saniyədir siqnal yoxdur`}</p>` +
+                `<p><b>Hazırda:</b> ${esc(i.current)} tapşırığındadır &nbsp;|&nbsp; <b>Cavablanıb:</b> ${i.answered} &nbsp;|&nbsp; <b>Xəbərdarlıq:</b> ${l.violations} / 3</p>`;
+
+            const tested = prog.tested || {};
+            if (Object.keys(tested).length) {
+                html += `<h4>«Kodu yoxla» nəticələri (son yoxlama):</h4><div class="grid-scores">`;
+                for (const [qid, ok] of Object.entries(tested)) {
+                    html += `<div class="${ok ? "full" : "zero"}"><b>${esc(qid)}:</b> ${ok ? "düz" : "səhv"}</div>`;
+                }
+                html += `</div>`;
+            }
+
+            const log = Array.isArray(prog.violation_log) ? prog.violation_log : [];
+            if (log.length) {
+                html += `<h4>Qayda pozuntuları və bloklanmış cəhdlər:</h4><ul class="log-list">`;
+                for (const item of log) {
+                    const t = item.t ? new Date(item.t).toLocaleTimeString("az-AZ") : "";
+                    html += `<li><span class="mono">${esc(t)}</span> — ${esc(item.reason)} ${item.counted ? '<b style="color: var(--danger);">(xəbərdarlıq)</b>' : '<span style="color:var(--muted);">(bloklandı)</span>'}</li>`;
+                }
+                html += `</ul>`;
+            }
+
+            const answers = prog.answers || {};
+            html += `<h4>Hazırkı cavablar:</h4>`;
+            const keys = TASK_IDS.filter(k => k in answers);
+            html += keys.length
+                ? keys.map(k => `<div style="margin-bottom: 8px;"><b>${esc(k)}:</b><pre class="answer-pre">${esc(answers[k]) || "(boş)"}</pre></div>`).join("")
+                : `<p class="muted">Tələbə hələ heç bir cavabı dəyişməyib.</p>`;
+
+            $("modal-body").innerHTML = html;
+            $("detail-modal").style.display = "flex";
+        }
+
+        // ====================================================================
+        // SIRA NÖMRƏLƏRİ LÖVHƏSİ: kim göndərib, hansı nömrələr boşdur
+        // ====================================================================
+        function renderRoster() {
+            const bySeat = new Map();   // sıra -> həmin nömrə ilə gələn nəticələrin indeksləri (ən yenisi birinci)
+            submissions.forEach((s, idx) => {
+                if (isAnnulled(s)) return;
+                const n = parseInt(s.student_id, 10);
+                if (!Number.isFinite(n) || n < 1 || n > GROUP_SIZE) return;
+                if (!bySeat.has(n)) bySeat.set(n, []);
+                bySeat.get(n).push(idx);
+            });
+
+            const liveBySeat = new Map();
+            for (const l of activeLive()) liveBySeat.set(parseInt(l.student_id, 10), l);
+
+            const empty = [];
+            const cols = VARIANTS.map(v => `<div class="roster-col"><h4>Variant ${v}</h4>`);
+            for (let n = 1; n <= GROUP_SIZE; n++) {
+                const col = (n - 1) % VARIANTS.length;
+                const list = bySeat.get(n) || [];
+                if (!list.length && liveBySeat.has(n)) {
+                    const l = liveBySeat.get(n);
+                    const i = liveInfo(l);
+                    cols[col] += `<div class="seat live${i.online ? "" : " stale"}" onclick="viewLive(${liveRows.indexOf(l)})" title="${esc(l.student_name)}">
+                        <span class="no">№ ${n}</span> · <span class="live-dot${i.online ? "" : " off"}"></span>işləyir · ${i.left} qalıb
+                        <div class="who">${esc(l.student_name)} <span class="muted">(${i.answered} · ${l.violations}/3)</span></div></div>`;
+                    continue;
+                }
+                if (!list.length) {
+                    empty.push(n);
+                    cols[col] += `<div class="seat empty"><span class="no">№ ${n}</span><div>Boş — nəticə yoxdur</div></div>`;
+                    continue;
+                }
+                const sub = submissions[list[0]];
+                const status = String(sub.status || "");
+                const cls = status.includes("KƏNARLAŞDIRILDI") ? "out" : status === "VAXT_BİTDİ" ? "late" : "done";
+                const label = status.includes("KƏNARLAŞDIRILDI") ? "kənarlaşdırıldı" : status === "VAXT_BİTDİ" ? "vaxt bitdi" : "tamamladı";
+                const dup = list.length > 1 ? ` · <b style="color: var(--warning);">${list.length} nəticə</b>` : "";
+                cols[col] += `<div class="seat ${cls}${list.length > 1 ? " dup" : ""}" onclick="viewDetails(${list[0]})" title="${esc(sub.student_name)}">
+                    <span class="no">№ ${n}</span> · ${Number(sub.score) || 0} bal${dup}
+                    <div class="who">${esc(sub.student_name)} <span class="muted">(${label})</span></div></div>`;
+            }
+            $("roster").innerHTML = cols.map(c => c + "</div>").join("");
+
+            const working = [...liveBySeat.keys()].filter(n => !bySeat.has(n)).length;
+            const filled = GROUP_SIZE - empty.length - working;
+            $("roster-summary").innerHTML =
+                `<b>Nəticə göndərən:</b> ${filled} / ${GROUP_SIZE} &nbsp;·&nbsp; <b>İşləyir:</b> ${working} &nbsp;·&nbsp; ` +
+                (empty.length
+                    ? `<b>Boş nömrələr (${empty.length}):</b> <span class="mono">${empty.join(", ")}</span>`
+                    : `<b style="color: var(--success);">Bütün nömrələr doludur.</b>`);
+        }
+
+        // ====================================================================
+        // ƏTRAFLI BAXIŞ
+        // ====================================================================
+        let openedIdx = null;
+
+        function viewDetails(idx) {
+            const sub = submissions[idx];
+            if (!sub) return;
+            openedIdx = idx;
+            openedLiveIdx = null;
+            $("release-btn").style.display = "none";
+            const canReset = !!(supabaseClient && sub.id && !isAnnulled(sub));
+            $("reset-btn").style.display = canReset ? "" : "none";
+            const b = sub.breakdown || {};
+            $("modal-title").textContent = `${sub.student_name} (${sub.student_group}, sıra ${sub.student_id || "—"}) — ${sub.variant}`;
+
+            let html = isAnnulled(sub)
+                ? `<p style="color: var(--danger);"><b>Bu nəticə ${esc(new Date(sub.annulled_at).toLocaleString("az-AZ"))} tarixində ləğv edilib — tələbəyə yenidən başlamaq icazəsi verilib.</b></p>`
+                : "";
+            html += `<p><b>Bal:</b> ${Number(sub.score) || 0} / ${Number(sub.max_score) || 100} &nbsp;|&nbsp; <b>Xəbərdarlıq:</b> ${Number(sub.violations) || 0} / 3 &nbsp;|&nbsp; <b>Status:</b> ${esc(sub.status)}</p>`;
+            if (b.grading) html += `<p><b>Yoxlama üsulu:</b> ${esc(b.grading === "pyodide" ? "avtomatik (Python)" : b.grading)}</p>`;
+            if (b.started_at) html += `<p><b>Başladı:</b> ${esc(new Date(b.started_at).toLocaleString("az-AZ"))} &nbsp;|&nbsp; <b>Bitirdi:</b> ${esc(new Date(b.finished_at).toLocaleString("az-AZ"))}</p>`;
+            html += `<hr style="margin: 12px 0; border: none; border-top: 1px solid var(--border);">`;
+
+            const scores = scoresOf(sub);
+            if (Object.keys(scores).length) {
+                html += `<h4 style="margin-bottom: 8px;">Tapşırıqlar üzrə ballar:</h4><div class="grid-scores">`;
+                for (const [qid, pts] of Object.entries(scores)) {
+                    html += `<div class="${pts > 0 ? "full" : "zero"}"><b>${esc(qid)}:</b> ${pts}b</div>`;
+                }
+                html += `</div>`;
+            }
+
+            const log = Array.isArray(b.violation_log) ? b.violation_log : [];
+            if (log.length) {
+                html += `<h4 style="margin-bottom: 8px;">Qayda pozuntuları və bloklanmış cəhdlər:</h4><ul class="log-list">`;
+                for (const item of log) {
+                    const t = item.t ? new Date(item.t).toLocaleTimeString("az-AZ") : "";
+                    html += `<li><span class="mono">${esc(t)}</span> — ${esc(item.reason)} ${item.counted ? '<b style="color: var(--danger);">(xəbərdarlıq)</b>' : '<span style="color:var(--muted);">(bloklandı)</span>'}</li>`;
+                }
+                html += `</ul>`;
+            }
+
+            if (sub.answers) {
+                html += `<h4 style="margin-bottom: 8px;">Tələbənin cavabları:</h4>`;
+                for (const [qid, text] of Object.entries(sub.answers)) {
+                    html += `<div style="margin-bottom: 8px;"><b>${esc(qid)}:</b><pre class="answer-pre">${esc(text) || "(Boş buraxılıb)"}</pre></div>`;
+                }
+            }
+
+            $("modal-body").innerHTML = html;
+            $("detail-modal").style.display = "flex";
+        }
+
+        function closeModal() {
+            $("detail-modal").style.display = "none";
+            openedIdx = null;
+        }
+
+        // Müəllim tələbənin nəticəsini ləğv edir → tələbə həmin nömrə ilə imtahana yenidən başlaya bilər.
+        // Nəticə silinmir, cədvəldə "ləğv edilib" kimi qalır.
+        // Davam edən imtahanı dayandırır və nömrəni azad edir (məs. tələbənin kompüteri xarab olub,
+        // və ya kimsə başqasının nömrəsi ilə daxil olub). Həmin kompüterdə imtahan dərhal bağlanır.
+        let openedLiveIdx = null;
+        async function releaseLive() {
+            const l = liveRows[openedLiveIdx];
+            if (!l || !adminPassword) return;
+            const ok = confirm(
+                `${l.student_name} (sıra ${l.student_id}, ${l.variant}) — imtahan davam edir.\n\n` +
+                "Bu sessiya dayandırılacaq: həmin kompüterdə imtahan dərhal bağlanacaq və yazılmış cavablar nəticə kimi göndərilməyəcək.\n" +
+                `${l.student_id} nömrəsi azad olacaq və imtahana yenidən (sıfırdan) başlamaq mümkün olacaq.\n\nDavam edilsin?`);
+            if (!ok) return;
+            const { error } = await supabaseClient.rpc("admin_release_live", { p_password: adminPassword, p_session_id: l.session_id });
+            if (error) {
+                alert(/could not find the function/i.test(error.message || "")
+                    ? "Bu funksiya bazada yoxdur. supabase_setup.sql faylını Supabase → SQL Editor-da yenidən işlədin."
+                    : "Alınmadı: " + (error.message || error));
+                return;
+            }
+            if (liveChannel) {
+                try { liveChannel.send({ type: "broadcast", event: "reset", payload: {} }); } catch (e) {}
+            }
+            closeModal();
+            await fetchResults();
+            alert(`${l.student_id} nömrəsi azad edildi. ${l.student_name} üçün imtahan dayandırıldı.`);
+        }
+
+        async function resetStudent() {
+            const sub = submissions[openedIdx];
+            if (!sub || !sub.id || !adminPassword) return;
+            const ok = confirm(
+                `${sub.student_name} (sıra ${sub.student_id}, ${sub.variant}) — ${Number(sub.score) || 0} bal.\n\n` +
+                "Bu nəticə ləğv ediləcək və tələbə imtahana yenidən (sıfırdan, 80 dəqiqə) başlaya biləcək.\n" +
+                "Ləğv edilmiş nəticə hesablamalara və Excel faylına daxil edilmir.\n\nDavam edilsin?");
+            if (!ok) return;
+            const { error } = await supabaseClient.rpc("admin_reset_submission", { p_password: adminPassword, p_id: sub.id });
+            if (error) {
+                alert(/could not find the function/i.test(error.message || "")
+                    ? "Bu funksiya bazada yoxdur. supabase_setup.sql faylını Supabase → SQL Editor-da yenidən işlədin."
+                    : "Ləğv etmək alınmadı: " + (error.message || error));
+                return;
+            }
+            if (liveChannel) {
+                try { liveChannel.send({ type: "broadcast", event: "reset", payload: {} }); } catch (e) {}
+            }
+            closeModal();
+            await fetchResults();
+            alert(`${sub.student_name} üçün imtahan yenidən başladıldı. Tələbənin ekranı dərhal giriş ekranına qayıdacaq.`);
+        }
+
+        // ====================================================================
+        // EXCEL ÜÇÜN İXRAC
+        // UTF-16LE + TAB ayırıcı: Excel faylı istənilən regional ayarda (az/ru/en)
+        // düzgün sütunlara bölür və Azərbaycan hərflərini (ə, ş, ğ...) korlamır.
+        // ====================================================================
+        function cell(v) {
+            let s = String(v ?? "");
+            if (/^[=+\-@]/.test(s)) s = "'" + s;          // Excel formula injection qarşısı
+            if (/[\t\n\r"]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+            return s;
+        }
+
+        function exportToCSV() {
+            if (activeSubs().length === 0) {
+                alert("İxrac ediləcək heç bir məlumat yoxdur!");
+                return;
+            }
+            const header = ["Vaxt", "Sıra", "Ad Soyad", "Kurs", "Variant", "Bal", "Maks. bal", "Qayda pozuntusu", "Status", "Yoxlama", ...TASK_IDS];
+            const rows = [header.join("\t")];
+            for (const s of activeSubs()) {
+                const sc = scoresOf(s);
+                rows.push([
+                    s.created_at ? new Date(s.created_at).toLocaleString("az-AZ") : "",
+                    s.student_id || "",
+                    s.student_name,
+                    s.student_group,
+                    s.variant,
+                    Number(s.score) || 0,
+                    Number(s.max_score) || 100,
+                    Number(s.violations) || 0,
+                    s.status,
+                    (s.breakdown || {}).grading || "",
+                    ...TASK_IDS.map(id => sc[id] ?? ""),
+                ].map(cell).join("\t"));
+            }
+            const text = rows.join("\r\n");
+            const bytes = new Uint8Array(2 + text.length * 2);
+            bytes[0] = 0xFF; bytes[1] = 0xFE; // UTF-16LE BOM
+            for (let i = 0; i < text.length; i++) {
+                const c = text.charCodeAt(i);
+                bytes[2 + i * 2] = c & 0xFF;
+                bytes[3 + i * 2] = c >> 8;
+            }
+            const blob = new Blob([bytes], { type: "text/csv;charset=utf-16le" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `SDF1_Imtahan_Neticeleri_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+    </script>
+</body>
+</html>

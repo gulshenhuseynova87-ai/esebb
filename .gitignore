@@ -1,0 +1,10 @@
+.claude/
+__pycache__/
+*.pyc
+
+# Məxfi mühit faylları (Əsla repoya düşməməlidir)
+.env
+.env.*
+!.env.example
+env.js
+!env.example.js

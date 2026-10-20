@@ -1,0 +1,2082 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SDF 1 — Verilənlərin strukturu və alqoritmlər | Bakı Mühəndislik Universiteti</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Serif:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <script src="env.js"></script>
+    <script src="sha256.js"></script>
+    <script src="exam_data.js"></script>
+    <style>
+        :root {
+            --navy: #14305a;
+            --navy-dark: #0e2343;
+            --gold: #a8873a;
+            --bg: #f2f3f5;
+            --paper: #ffffff;
+            --text: #1b1f24;
+            --muted: #5a6370;
+            --border: #c8cdd4;
+            --border-light: #e1e4e8;
+            --ok: #1d6b3a;
+            --ok-bg: #eef6f0;
+            --bad: #9b1c1c;
+            --bad-bg: #fbefef;
+            --warn: #8a5a00;
+            --code-bg: #f6f7f9;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+        input, textarea { user-select: text; -webkit-user-select: text; }
+
+        body {
+            font-family: 'Noto Sans', 'Segoe UI', Arial, sans-serif;
+            font-size: 15px;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1, h2, h3 { font-family: 'Noto Serif', Georgia, serif; font-weight: 700; color: var(--navy-dark); }
+
+        /* Universitet başlığı */
+        .uni-header {
+            background: var(--navy);
+            color: #fff;
+            border-bottom: 3px solid var(--gold);
+        }
+        .uni-header-inner {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .uni-name { font-family: 'Noto Serif', Georgia, serif; font-size: 17px; font-weight: 700; letter-spacing: 0.06em; }
+        .uni-sub { font-size: 12.5px; opacity: 0.85; margin-top: 2px; }
+        .uni-course { font-size: 13px; text-align: right; opacity: 0.95; line-height: 1.4; }
+
+        /* İmtahan status paneli */
+        .statusbar {
+            background: var(--paper);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            display: none;
+        }
+        .statusbar-inner {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            font-size: 13.5px;
+        }
+        .statusbar .group { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+        .statusbar .label { color: var(--muted); }
+        .statusbar b { font-weight: 600; }
+        .timer { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 500; }
+        .violations.v1, .violations.v2 { color: var(--bad); }
+
+        .container { max-width: 960px; width: 100%; margin: 24px auto; padding: 0 16px; flex: 1; }
+        .narrow { max-width: 620px; }
+
+        .panel {
+            background: var(--paper);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            margin-bottom: 18px;
+        }
+        .panel-head {
+            border-bottom: 1px solid var(--border-light);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 12px;
+        }
+        .panel-head h2 { font-size: 18px; }
+        .panel-head .task-id { font-weight: 700; color: var(--navy); margin-right: 6px; }
+        .panel-head .title { font-weight: 600; font-size: 15px; }
+        .panel-head .points { color: var(--muted); font-size: 13.5px; white-space: nowrap; }
+        .panel-body { padding: 18px 20px; }
+
+        .info-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 18px; }
+        .info-table td { border: 1px solid var(--border-light); padding: 7px 10px; }
+        .info-table td:first-child { color: var(--muted); width: 42%; background: #fafbfc; }
+
+        .rules { font-size: 14px; line-height: 1.6; padding-left: 20px; margin-bottom: 20px; }
+        .rules li { margin-bottom: 4px; }
+        .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--navy); margin-bottom: 8px; }
+
+        .field { margin-bottom: 14px; }
+        .field label { display: block; font-size: 13.5px; font-weight: 600; margin-bottom: 5px; }
+        .field input {
+            width: 100%;
+            padding: 9px 11px;
+            font: inherit;
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            background: #fff;
+        }
+        .field input:focus, .single-input:focus { outline: 2px solid var(--navy); outline-offset: -1px; }
+        .hint { font-size: 12.5px; color: var(--muted); margin-top: 5px; }
+        .sys-status { font-size: 12.5px; color: var(--muted); margin: 4px 0 16px; }
+
+        /* Düymələr */
+        .btn {
+            font: inherit;
+            font-weight: 600;
+            font-size: 14px;
+            padding: 9px 18px;
+            border-radius: 2px;
+            border: 1px solid var(--navy);
+            background: var(--navy);
+            color: #fff;
+            cursor: pointer;
+        }
+        .btn:hover { background: var(--navy-dark); }
+        .btn:disabled { opacity: 0.6; cursor: wait; }
+        .btn-outline { background: #fff; color: var(--navy); }
+        .btn-outline:hover { background: #eef1f6; }
+        .btn-danger { background: var(--bad); border-color: var(--bad); }
+        .btn-danger:hover { background: #7f1616; }
+        .btn-sm { padding: 6px 12px; font-size: 13px; }
+        .btn-block { width: 100%; padding: 11px; }
+
+        /* Notebook mətni */
+        .task-page .md, .task-page .md *, .task-page pre, .task-page pre * { user-select: text; -webkit-user-select: text; }
+        .md { font-size: 14.5px; line-height: 1.65; margin-bottom: 14px; }
+        .md p, .md ul, .md ol, .md .math, .md pre, .md table { margin-bottom: 10px; }
+        .md ul, .md ol { padding-left: 22px; }
+        .md h2 { font-size: 21px; margin: 8px 0 6px; }
+        .md h3 { font-size: 17px; margin: 6px 0 8px; }
+        .md h4 { display: none; } /* tapşırıq başlığı panelin başlığındadır */
+        .md hr { display: none; }
+        .md code { font-family: 'JetBrains Mono', monospace; font-size: 13px; background: var(--code-bg); border: 1px solid var(--border-light); padding: 0 4px; }
+        .md pre code { border: none; padding: 0; background: none; }
+        .md table { border-collapse: collapse; font-size: 13.5px; }
+        .md th, .md td { border: 1px solid var(--border); padding: 4px 10px; }
+        .dep-note { background: #fbf5e6; border: 1px solid #e3cf9f; border-left: 4px solid var(--warn); padding: 9px 12px; margin-bottom: 14px; font-size: 14px; color: #4d3500; }
+        .section-block { margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--navy); }
+        .section-block .md { margin-bottom: 4px; }
+
+        pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            background: var(--code-bg);
+            border: 1px solid var(--border-light);
+            padding: 10px 14px;
+            overflow-x: auto;
+        }
+
+        /* Kod redaktoru (Colab / Jupyter kimi): sətir nömrələri, rəngləmə, avtomatik girinti */
+        .code-editor {
+            display: flex;
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            background: #fff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 20px;
+            font-variant-ligatures: none;
+            tab-size: 4;
+        }
+        .code-editor:focus-within { outline: 2px solid var(--navy); outline-offset: -1px; }
+        .ce-gutter {
+            flex: none;
+            min-width: 2.8em;
+            padding: 10px 8px 10px 6px;
+            text-align: right;
+            color: #9aa3ad;
+            background: #f6f7f9;
+            border-right: 1px solid var(--border-light);
+            white-space: pre;
+        }
+        .ce-main { position: relative; flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; }
+        .ce-hl, textarea.code-input {
+            font: inherit;
+            line-height: inherit;
+            letter-spacing: 0;
+            font-variant-ligatures: none;
+            tab-size: 4;
+            white-space: pre;
+            word-wrap: normal;
+            padding: 10px 12px;
+            margin: 0;
+            border: 0;
+        }
+        .ce-hl {
+            position: absolute;
+            top: 0;
+            left: 0;
+            min-width: 100%;
+            pointer-events: none;
+            background: none;
+            color: var(--text);
+            overflow: visible;
+        }
+        textarea.code-input {
+            position: relative;
+            display: block;
+            width: 100%;
+            min-height: 140px;
+            resize: none;
+            overflow: hidden;
+            background: transparent;
+            color: transparent;
+            -webkit-text-fill-color: transparent;
+            caret-color: var(--text);
+            outline: none;
+        }
+        textarea.code-input::selection { background: rgba(20, 48, 90, 0.22); }
+        .ce-hl .kw { color: #7a2fb3; font-weight: 500; }
+        .ce-hl .bi { color: #1f6f8b; }
+        .ce-hl .st { color: #a31515; }
+        .ce-hl .cm { color: #5f7f5f; font-style: italic; }
+        .ce-hl .nu { color: #0b7a5a; }
+        .ce-hl .fn { color: #795e26; font-weight: 500; }
+        .ce-hl .de { color: #a35d00; }
+        .ce-hint { font-size: 12px; color: var(--muted); margin-top: 5px; }
+        .ce-hint kbd { font-family: 'JetBrains Mono', monospace; font-size: 11px; border: 1px solid var(--border); border-bottom-width: 2px; padding: 0 4px; background: #fafbfc; }
+
+        .cell-output { display: none; margin-top: 8px; border: 1px solid var(--border-light); border-left: 4px solid var(--border); background: #fafbfc; }
+        .cell-output.show { display: block; }
+        .cell-output .co-head { font-size: 12px; color: var(--muted); padding: 5px 10px 0; }
+        .cell-output pre { border: 0; background: none; margin: 0; padding: 6px 10px 9px; white-space: pre-wrap; word-break: break-word; max-height: 320px; overflow: auto; }
+        .cell-output .co-err { color: var(--bad); }
+
+        .single-input { width: 220px; padding: 8px 11px; font: inherit; border: 1px solid var(--border); border-radius: 2px; }
+
+        .code-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+        .result { display: none; margin-top: 10px; padding: 9px 12px; font-size: 14px; line-height: 1.5; border: 1px solid var(--border-light); border-left-width: 4px; }
+        .result.ok { display: block; background: var(--ok-bg); border-left-color: var(--ok); }
+        .result.bad { display: block; background: var(--bad-bg); border-left-color: var(--bad); }
+        .result.info { display: block; background: #f7f8fa; border-left-color: var(--border); color: var(--muted); }
+        .result .head { font-weight: 600; }
+        .result.ok .head { color: var(--ok); }
+        .result.partial { display: block; background: #fff8e6; border-left-color: #d9a400; }
+        .result.partial .head { color: #8a6500; }
+        .result.bad .head { color: var(--bad); }
+        .result .detail { margin-top: 3px; font-size: 13.5px; }
+        .result pre { margin-top: 8px; font-size: 12px; white-space: pre-wrap; background: #fff; }
+
+        .options-list { display: flex; flex-direction: column; gap: 6px; }
+        .option-label {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 12px;
+            border: 1px solid var(--border-light);
+            cursor: pointer;
+            font-size: 14.5px;
+            line-height: 1.45;
+        }
+        .option-label:hover { background: #f7f8fa; }
+        .option-label.selected { border-color: var(--navy); background: #eef1f6; }
+        .option-label input { margin-top: 4px; accent-color: var(--navy); }
+        .option-key { font-weight: 600; min-width: 18px; }
+
+        .finish-row { text-align: center; margin: 28px 0 48px; }
+
+        /* Səhifələr: hər səhifədə bir tapşırıq */
+        .task-page { display: none; }
+        .task-page.current { display: block; }
+        .task-page .section-block { margin-top: 4px; }
+        .pager { padding: 12px 16px; margin-bottom: 16px; }
+        .pager-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+        .pager-head b { font-size: 15px; }
+        .page-nav { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; }
+        .nav-btn {
+            font: inherit; font-size: 12.5px; font-weight: 600; padding: 6px 0;
+            border: 1px solid var(--border); background: #fff; color: var(--text); cursor: pointer; border-radius: 2px;
+        }
+        .nav-btn:hover { border-color: var(--navy); }
+        .nav-btn.answered { background: #e6ebf3; border-color: #9fb0c8; }
+        .nav-btn.current { background: var(--navy); border-color: var(--navy); color: #fff; }
+        .page-legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 8px; flex-wrap: wrap; }
+        .page-legend i { display: inline-block; width: 11px; height: 11px; border: 1px solid var(--border); margin-right: 5px; vertical-align: -1px; }
+        .page-buttons { display: flex; justify-content: space-between; gap: 10px; margin: 18px 0 48px; }
+        @media (max-width: 640px) { .page-nav { grid-template-columns: repeat(5, 1fr); } }
+
+        /* Modallar */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(14, 35, 67, 0.82);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        #warning-overlay { z-index: 10001; }
+        .modal {
+            background: var(--paper);
+            max-width: 500px;
+            width: 100%;
+            border-top: 4px solid var(--navy);
+            padding: 24px 26px;
+        }
+        .modal.alert { border-top-color: var(--bad); }
+        .modal h3 { font-size: 19px; margin-bottom: 10px; }
+        .modal.alert h3 { color: var(--bad); }
+        .modal p { font-size: 14.5px; line-height: 1.6; margin-bottom: 12px; }
+        .modal .counter { font-weight: 700; color: var(--bad); margin-bottom: 18px; }
+        .modal .actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--navy-dark);
+            color: #fff;
+            padding: 9px 16px;
+            font-size: 13.5px;
+            z-index: 10002;
+            display: none;
+        }
+
+        .uni-footer { text-align: center; font-size: 12px; color: var(--muted); padding: 18px 16px 24px; }
+        .uni-footer a { color: var(--muted); }
+
+        #exam-screen, #resume-screen, #complete-screen { display: none; }
+
+        @media (max-width: 640px) {
+            .uni-course { text-align: left; }
+            .panel-head { flex-direction: column; gap: 2px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="uni-header">
+        <div class="uni-header-inner">
+            <div>
+                <div class="uni-name">BAKI MÜHƏNDİSLİK UNİVERSİTETİ</div>
+                <div class="uni-sub">İnformasiya və kompüter texnologiyaları fakültəsi · Kompüter mühəndisliyi</div>
+            </div>
+            <div class="uni-course">Verilənlərin strukturu və alqoritmlər · 2-ci kurs<br>Semestr daxili qiymətləndirmə — SDF 1</div>
+        </div>
+    </header>
+
+    <!-- İmtahan zamanı status paneli -->
+    <div id="statusbar" class="statusbar">
+        <div class="statusbar-inner">
+            <div class="group">
+                <span><span class="label">Tələbə:</span> <b id="display-student-name"></b></span>
+                <span><span class="label">Sıra №:</span> <b id="display-student-no"></b></span>
+                <span><span class="label">Variant:</span> <b id="display-variant"></b></span>
+            </div>
+            <div class="group">
+                <span id="py-chip" class="label">Yoxlama sistemi yüklənir…</span>
+                <span id="violations-display" class="violations"><span class="label">Xəbərdarlıq:</span> <b>0 / 3</b></span>
+                <span><span class="label">Qalan vaxt:</span> <b id="timer-display" class="timer">80:00</b></span>
+                <button class="btn btn-sm" onclick="openFinishModal()">İmtahanı bitir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1. GİRİŞ -->
+    <main id="login-screen" class="container narrow">
+        <div class="panel">
+            <div class="panel-head"><h2>İmtahana giriş</h2></div>
+            <div class="panel-body">
+                <table class="info-table">
+                    <tr><td>Fənn</td><td>Verilənlərin strukturu və alqoritmlər</td></tr>
+                    <tr><td>Qiymətləndirmə</td><td>SDF 1 (semestr daxili)</td></tr>
+                    <tr><td>Kurs</td><td>2-ci kurs</td></tr>
+                    <tr><td>Müddət</td><td>80 dəqiqə</td></tr>
+                    <tr><td>Tapşırıqlar</td><td>10 tapşırıq (4 nəzəri + 6 praktiki), hər biri 10 bal, cəmi 100 bal</td></tr>
+                </table>
+
+                <div class="section-title">İmtahan qaydaları</div>
+                <ol class="rules">
+                    <li>İmtahan tam ekran rejimində keçirilir.</li>
+                    <li>Başqa pəncərəyə və ya taba keçmək (Alt+Tab daxil), brauzeri kiçiltmək, tam ekrandan çıxmaq və səhifəni yeniləmək qayda pozuntusu sayılır.</li>
+                    <li>Üçüncü pozuntuda imtahan avtomatik ləğv edilir və nəticə 0 bal kimi qeydə alınır.</li>
+                    <li>Ctrl+C / Ctrl+V yalnız imtahanın daxilində işləyir: tapşırığın şərtindən və öz kodunuzdan kopyalayıb cavab xanalarına yapışdıra bilərsiniz, lakin kənardan mətn yapışdırmaq və tapşırıqları imtahandan kənara kopyalamaq mümkün deyil. Sağ klik və brauzerin tərtibatçı alətləri bloklanıb.</li>
+                    <li>Hər səhifədə bir tapşırıq var. Tapşırıqlar arasında istənilən vaxt keçə bilərsiniz — yazdıqlarınız saxlanılır.</li>
+                    <li>Kod redaktoru Colab / Jupyter kimi işləyir: girinti (boşluqlar) avtomatik qoyulur. «▶ İşə sal» (Shift+Enter) kodu icra edir, «Kodu yoxla» isə həllinizi testlərlə yoxlayır.</li>
+                    <li>Nəzəri suallar 0 və ya 10 bal, kod tapşırıqları isə hissə-hissə (0–10 bal arası) qiymətləndirilir: həllin düzgün hissələri üçün bal verilir.</li>
+                </ol>
+
+                <div class="field">
+                    <label for="input-name">Ad və soyad</label>
+                    <input type="text" id="input-name" autocomplete="off" maxlength="80">
+                </div>
+                <div class="field">
+                    <label for="input-id">Siyahıdakı sıra nömrəsi</label>
+                    <input type="text" id="input-id" autocomplete="off" inputmode="numeric" maxlength="3">
+                    <div class="hint">Sıra nömrənizi (1–35) müəllimdən öyrənin.</div>
+                </div>
+
+                <div class="sys-status">Sistemin vəziyyəti: <span id="sys-status-text">yoxlanılır…</span></div>
+                <div id="login-error" class="result bad" style="display: none; margin-bottom: 12px;"></div>
+                <div id="login-notice" class="result ok" style="display: none; margin-bottom: 12px;"></div>
+                <button id="start-btn" class="btn btn-block" onclick="startExamFlow()">İmtahana başla</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 1b. DAVAM ETMƏ (səhifə yeniləndikdə) -->
+    <main id="resume-screen" class="container narrow">
+        <div class="panel">
+            <div class="panel-head"><h2>İmtahan davam edir</h2></div>
+            <div class="panel-body">
+                <p id="resume-desc" style="line-height: 1.6; margin-bottom: 16px;"></p>
+                <button class="btn btn-block" onclick="resumeExam()">Tam ekrana keç və davam et</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 2. TAPŞIRIQLAR -->
+    <main id="exam-screen" class="container">
+        <div class="panel pager">
+            <div class="pager-head">
+                <b id="page-label">Tapşırıq 1 / 20</b>
+                <span class="hint" id="answered-label"></span>
+            </div>
+            <div id="page-nav" class="page-nav"></div>
+            <div class="page-legend">
+                <span><i style="background: var(--navy); border-color: var(--navy);"></i>hazırkı tapşırıq</span>
+                <span><i style="background: #e6ebf3; border-color: #9fb0c8;"></i>cavab yazılıb</span>
+                <span><i></i>cavab yoxdur</span>
+            </div>
+        </div>
+        <div id="questions-container"></div>
+        <div class="page-buttons">
+            <button id="prev-btn" class="btn btn-outline" onclick="showPage(currentPage - 1)">← Əvvəlki tapşırıq</button>
+            <button id="next-btn" class="btn" onclick="nextOrFinish()">Növbəti tapşırıq →</button>
+        </div>
+    </main>
+
+    <!-- 3. NƏTİCƏ -->
+    <main id="complete-screen" class="container narrow">
+        <div class="panel">
+            <div class="panel-head"><h2 id="complete-title">İmtahan başa çatdı</h2></div>
+            <div class="panel-body">
+                <p id="complete-desc" style="margin-bottom: 14px; line-height: 1.6;"></p>
+                <table class="info-table" id="complete-table" style="display: none;">
+                    <tr><td>Tələbə</td><td id="res-name"></td></tr>
+                    <tr><td>Sıra nömrəsi</td><td id="res-no"></td></tr>
+                    <tr><td>Variant</td><td id="res-variant"></td></tr>
+                    <tr><td>Toplanan bal</td><td><b id="display-final-score"></b></td></tr>
+                    <tr><td>Qayda pozuntusu</td><td id="display-violations-final"></td></tr>
+                </table>
+                <div id="upload-status" class="result info"></div>
+                <p class="hint" style="margin-top: 14px;">Kompüteri tərk etməzdən əvvəl nəticənizi imtahan rəhbərinə təqdim edin.</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="uni-footer">
+        © Bakı Mühəndislik Universiteti · <span title="Saytın yeni versiyasının dərc olunduğunu yoxlamaq üçün">Versiya: VSA-2026-10-20 (Verilənlərin strukturu və alqoritmlər)</span>
+        <span id="teacher-reset" style="display: none;"> · <a href="#" onclick="teacherReset(); return false;">İmtahan rəhbəri üçün: kompüteri sıfırla</a></span>
+    </footer>
+
+    <!-- Qayda pozuntusu -->
+    <div id="warning-overlay" class="overlay">
+        <div class="modal alert">
+            <h3 id="warning-title-text">Qayda pozuntusu qeydə alındı</h3>
+            <p id="warning-desc-text"></p>
+            <div class="counter" id="warning-remaining-text"></div>
+            <div class="actions">
+                <button id="warning-btn" class="btn btn-danger" onclick="dismissWarning()">Tam ekrana qayıt və davam et</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tam ekran tələbi (pozuntu sayılmır) -->
+    <div id="fullscreen-gate" class="overlay">
+        <div class="modal">
+            <h3>Tam ekran rejimi tələb olunur</h3>
+            <p>İmtahan yalnız tam ekran rejimində davam edə bilər.</p>
+            <div class="actions"><button class="btn" onclick="enterFullscreen()">Tam ekrana keç</button></div>
+        </div>
+    </div>
+
+    <!-- Bitirmə təsdiqi -->
+    <div id="finish-overlay" class="overlay">
+        <div class="modal">
+            <h3>İmtahanı bitirmək</h3>
+            <p id="finish-desc"></p>
+            <div class="actions">
+                <button class="btn btn-outline" onclick="closeFinishModal()">Geri qayıt</button>
+                <button id="finish-confirm-btn" class="btn" onclick="confirmFinishExam()">Təsdiqlə və bitir</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // ====================================================================
+        // KONFİQURASİYA
+        // ====================================================================
+        const SUPABASE_URL = (window.__ENV && window.__ENV.SUPABASE_URL) || localStorage.getItem("exam_supabase_url") || "";
+        const SUPABASE_ANON_KEY = (window.__ENV && window.__ENV.SUPABASE_ANON_KEY) || localStorage.getItem("exam_supabase_key") || "";
+        const PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/";
+        const ADMIN_HASH = (window.__ENV && window.__ENV.ADMIN_PASSWORD_HASH) || localStorage.getItem("exam_admin_hash") || ""; // yalnız kompüteri sıfırlamaq üçün
+
+        const GROUP_NAME = "2-ci kurs";       // qrup istifadə olunmur; bazada kurs kimi saxlanılır
+        const VARIANTS = ["A", "B", "C", "D", "E"];
+        const GROUP_SIZE = 35;               // 35 tələbə → hər varianta 7 nəfər
+        const EXAM_DURATION_SEC = 80 * 60;   // 80 dəqiqə
+        const MAX_VIOLATIONS = 3;
+        const SESSION_KEY = "sdf1_exam_session_vsa_v1";   // Verilənlərin strukturu və alqoritmlər
+
+        // Variant qaydası telebeler_35.py ilə eynidir: (sıra - 1) % 5
+        function variantFor(sira) {
+            return VARIANTS[(sira - 1) % VARIANTS.length];
+        }
+
+        let supabaseClient = null;
+        try {
+            if (SUPABASE_URL.startsWith("http") && window.supabase) {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+        } catch (e) {
+            console.log("Supabase setup:", e);
+        }
+
+        // ====================================================================
+        // KÖMƏKÇİ FUNKSİYALAR
+        // ====================================================================
+        const $ = (id) => document.getElementById(id);
+        
+        function escapeHtml(s) {
+            return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+        }
+
+        // Yoxlama mesajının əvvəlindəki işarəni (✅/❌) rəsmi görünüş üçün çıxarır
+        const plainMsg = (msg) => String(msg || "").replace(/^\S+\s+/, "");
+
+        let toastTimer = null;
+        function showToast(text) {
+            const t = $("toast");
+            t.textContent = text;
+            t.style.display = "block";
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { t.style.display = "none"; }, 2500);
+        }
+
+        function updateSysStatus() {
+            const el = $("sys-status-text");
+            if (!supabaseClient) el.innerHTML = '<span style="color: var(--warn);">nəticələr bazaya göndərilə bilmir — imtahan rəhbərinə bildirin</span>';
+            else if (py.state === "ready") el.innerHTML = '<span style="color: var(--ok);">hazırdır</span>';
+            else if (py.state === "failed") el.innerHTML = '<span style="color: var(--bad);">yoxlama sistemi yüklənmədi — internet bağlantısını yoxlayın</span>';
+            else el.textContent = "yüklənir… (bir neçə saniyə çəkə bilər)";
+        }
+
+        // ====================================================================
+        // SESSİYA (səhifə yenilənsə belə xəbərdarlıqlar, vaxt və cavablar itmir)
+        // ====================================================================
+        let session = null;
+
+        function loadSession() {
+            try { return JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch (e) { return null; }
+        }
+
+        function saveSession() {
+            try { localStorage.setItem(SESSION_KEY, JSON.stringify(session)); } catch (e) {}
+        }
+
+        let saveTimer = null;
+        function saveSessionSoon() {
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(saveSession, 400);
+            if (session && session.status === "active") liveSyncSoon(3000);
+            if (typeof updateNav === "function") updateNav();
+        }
+
+        // ====================================================================
+        // CANLI İZLƏMƏ (backend: Supabase — student_heartbeat funksiyası + Realtime kanalı)
+        // Tələbənin vəziyyəti (cavablar, xəbərdarlıqlar, "Kodu yoxla" nəticələri) serverə
+        // göndərilir və müəllim panelinə dərhal siqnal verilir.
+        // ====================================================================
+        let liveChannel = null, liveTimer = null, liveInterval = null, liveWarned = false;
+        let resetCheck = null;
+
+        function setupRealtime() {
+            if (!supabaseClient || liveChannel) return;
+            try {
+                liveChannel = supabaseClient.channel("sdf1-live", { config: { broadcast: { self: false } } });
+                liveChannel.on("broadcast", { event: "reset" }, () => {
+                    if (resetCheck) resetCheck();
+                    if (session && session.status === "active" && examActive) liveSync();
+                });
+                liveChannel.subscribe();
+            } catch (e) {
+                liveChannel = null;
+            }
+        }
+
+        function pingTeacher() {
+            if (!liveChannel) return;
+            try { liveChannel.send({ type: "broadcast", event: "changed", payload: {} }); } catch (e) {}
+        }
+
+        async function liveSync() {
+            clearTimeout(liveTimer);
+            if (!supabaseClient || !session || !session.sessionId) return;
+            const final = session.status === "finished" && session.record;
+            const state = !final ? "active" : (session.record.status === "KƏNARLAŞDIRILDI_3_HAQQ" ? "terminated" : "finished");
+            const answers = session.answers || {};
+            const tasks = activeVariant ? activeVariant.tasks : [];
+            const answered = tasks.filter(t => {
+                const a = answers[t.id];
+                return t.kind === "code" ? (a !== undefined && a !== t.starter) : String(a || "").trim() !== "";
+            }).length;
+            try {
+                const { data: liveState, error } = await supabaseClient.rpc("student_heartbeat", {
+                    p_session_id: session.sessionId,
+                    p_group: session.group || GROUP_NAME,
+                    p_sira: String(session.sira),
+                    p_name: session.name,
+                    p_variant: "Variant " + session.variant,
+                    p_started_at: new Date(session.startedAt).toISOString(),
+                    p_violations: Math.min(session.violations, MAX_VIOLATIONS),
+                    p_state: state,
+                    p_progress: {
+                        answers, answered, total: tasks.length,
+                        tested: session.tested || {},
+                        current: pages[currentPage] ? pages[currentPage].id : null,
+                        violation_log: session.log || [],
+                        score: final ? session.record.score : null,
+                    },
+                });
+                if (error) {
+                    if (!liveWarned) { console.warn("Canlı izləmə:", error.message); liveWarned = true; }
+                    return;
+                }
+                if (liveState === "released" && session.status === "active") {
+                    stopReleasedSession();
+                    return;
+                }
+                pingTeacher();
+            } catch (e) {}
+        }
+
+        function liveSyncSoon(ms) {
+            clearTimeout(liveTimer);
+            liveTimer = setTimeout(liveSync, ms);
+        }
+
+        function startLiveSync() {
+            if (!session.sessionId) { session.sessionId = newRecordId(); saveSession(); }
+            liveSync();
+            clearInterval(liveInterval);
+            liveInterval = setInterval(liveSync, 15000);
+        }
+
+        // ====================================================================
+        // PYTHON MÜHİTİ (Pyodide, ayrıca Web Worker-də — sonsuz dövr səhifəni dondurmur)
+        // ====================================================================
+        const WORKER_SRC = `
+            const post = self.postMessage.bind(self);
+            let py = null;
+            self.onmessage = async (ev) => {
+                const msg = ev.data;
+                if (msg.type === "init") {
+                    try {
+                        importScripts(msg.indexURL + "pyodide.js");
+                        py = await loadPyodide({ indexURL: msg.indexURL });
+                        py.runPython(msg.harness);
+                        post({ type: "ready" });
+                    } catch (e) {
+                        post({ type: "init-error", error: String(e) });
+                    }
+                } else if (msg.type === "run") {
+                    try {
+                        // Kodda import olunan paketlər (məs. numpy) lazım olduqda avtomatik yüklənir
+                        for (const code of (msg.imports || [])) {
+                            try { await py.loadPackagesFromImports(code); } catch (e) {}
+                        }
+                        const fn = py.globals.get("run_json");
+                        const out = fn(msg.payload);
+                        fn.destroy();
+                        post({ type: "result", id: msg.id, result: out });
+                    } catch (e) {
+                        post({ type: "result", id: msg.id, error: String(e) });
+                    }
+                }
+            };
+        `;
+
+        const py = { worker: null, state: "loading", pending: new Map(), seq: 0, readyWaiters: [] };
+
+        function setPyStatus(state) {
+            py.state = state;
+            const chip = $("py-chip");
+            if (state === "ready") { chip.textContent = "Yoxlama sistemi: hazır"; chip.style.color = "var(--ok)"; }
+            else if (state === "failed") { chip.textContent = "Yoxlama sistemi: bağlantı xətası"; chip.style.color = "var(--bad)"; }
+            else { chip.textContent = "Yoxlama sistemi yüklənir…"; chip.style.color = ""; }
+            updateSysStatus();
+            if (state !== "loading") py.readyWaiters.splice(0).forEach(fn => fn(state === "ready"));
+        }
+
+        function startPython() {
+            if (py.worker) py.worker.terminate();
+            for (const [, p] of py.pending) p.reject(new Error("Yoxlama sistemi yenidən başladıldı"));
+            py.pending.clear();
+            setPyStatus("loading");
+            try {
+                const blobUrl = URL.createObjectURL(new Blob([WORKER_SRC], { type: "text/javascript" }));
+                py.worker = new Worker(blobUrl);
+            } catch (e) {
+                console.error(e);
+                setPyStatus("failed");
+                return;
+            }
+            py.worker.onmessage = (ev) => {
+                const m = ev.data;
+                if (m.type === "ready") setPyStatus("ready");
+                else if (m.type === "init-error") { console.error(m.error); setPyStatus("failed"); }
+                else if (m.type === "result" && py.pending.has(m.id)) {
+                    const p = py.pending.get(m.id);
+                    py.pending.delete(m.id);
+                    clearTimeout(p.timer);
+                    if (m.error) p.reject(new Error(m.error));
+                    else p.resolve(JSON.parse(m.result));
+                }
+            };
+            py.worker.onerror = (e) => {
+                if (py.state === "loading") { console.error(e.message); setPyStatus("failed"); }
+            };
+            py.worker.postMessage({ type: "init", indexURL: PYODIDE_URL, harness: window.EXAM_DATA.harness });
+        }
+
+        function waitForPython(maxMs) {
+            if (py.state !== "loading") return Promise.resolve(py.state === "ready");
+            return new Promise(resolve => {
+                const t = setTimeout(() => resolve(false), maxMs);
+                py.readyWaiters.push(ok => { clearTimeout(t); resolve(ok); });
+            });
+        }
+
+        // Python-da kodu işlədir. hardTimeoutMs keçərsə worker dayandırılıb yenidən yüklənir.
+        function runPython(payload, hardTimeoutMs) {
+            return new Promise((resolve, reject) => {
+                if (py.state !== "ready") return reject(new Error("Yoxlama sistemi hazır deyil"));
+                const id = ++py.seq;
+                const timer = setTimeout(() => {
+                    py.pending.delete(id);
+                    reject(new Error("Kod çox uzun icra olundu (sonsuz dövr ola bilər). Yoxlama sistemi yenidən başladılır."));
+                    startPython();
+                }, hardTimeoutMs);
+                py.pending.set(id, { resolve, reject, timer });
+                const imports = (payload.mode === "cell" ? [payload.code] : Object.values(payload.answers || {}))
+                    .filter(a => typeof a === "string" && /\bimport\b/.test(a));
+                py.worker.postMessage({ type: "run", id, payload: JSON.stringify(payload), imports });
+            });
+        }
+
+        // ====================================================================
+        // STATE
+        // ====================================================================
+        let activeVariant = null;
+        let examActive = false;
+        let submitting = false;
+        let timerInterval = null;
+        let warningModalOpen = false;
+        let lastViolationAt = 0;
+
+        // ====================================================================
+        // GİRİŞ VƏ VARİANT TƏYİNİ
+        // ====================================================================
+        function parseSira(raw) {
+            const s = String(raw || "").trim();
+            if (!/^\d+$/.test(s)) return null;
+            const n = parseInt(s, 10);
+            return (n >= 1 && n <= GROUP_SIZE) ? n : null;
+        }
+
+        function showLoginError(text) {
+            const el = $("login-error");
+            el.textContent = text;
+            el.style.display = text ? "block" : "none";
+            if (text) $("login-notice").style.display = "none";
+        }
+
+        // Bu nömrə ilə artıq (ləğv edilməmiş) nəticə varmı? Bazaya çatmaq mümkün olmasa imtahana mane olmur.
+        async function seatIsTaken(sira) {
+            if (!supabaseClient) return false;
+            try {
+                const { data, error } = await supabaseClient.rpc("seat_is_taken", { p_group: GROUP_NAME, p_sira: String(sira) });
+                if (error) { console.warn("seat_is_taken:", error.message); return false; }
+                return data === true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // Nömrəni serverdə tutur: eyni nömrə ilə eyni anda yalnız bir imtahan gedə bilər
+        // (verilənlər bazasındakı unikal indeks iki eyni anda klikin ikisini də buraxmır).
+        // Nəticə: "ok" | "in_use" | "submitted". Server funksiyası yoxdursa köhnə yoxlamaya keçir.
+        async function claimSeat(sessionId, name, sira, startedAt) {
+            if (!supabaseClient) return "ok";
+            try {
+                const { data, error } = await supabaseClient.rpc("claim_seat", {
+                    p_session_id: sessionId, p_group: GROUP_NAME, p_sira: String(sira), p_name: name,
+                    p_variant: "Variant " + variantFor(sira), p_started_at: new Date(startedAt).toISOString(),
+                });
+                if (!error) return data || "ok";
+                console.warn("claim_seat:", error.message);
+            } catch (e) {}
+            return (await seatIsTaken(sira)) ? "submitted" : "ok";
+        }
+
+        // Müəllim bu sessiyanı dayandırıb nömrəni azad edibsə
+        function stopReleasedSession() {
+            examActive = false;
+            submitting = true;
+            clearInterval(timerInterval);
+            clearInterval(liveInterval);
+            localStorage.removeItem(SESSION_KEY);
+            try { sessionStorage.setItem("sdf1_released_notice", "1"); } catch (e) {}
+            if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+            location.reload();
+        }
+
+        async function startExamFlow() {
+            const name = $("input-name").value.trim().replace(/\s+/g, " ");
+            const sira = parseSira($("input-id").value);
+            showLoginError("");
+
+            if (name.length < 3 || !name.includes(" ")) {
+                showLoginError("Ad və soyadınızı tam daxil edin.");
+                return;
+            }
+            if (!sira) {
+                showLoginError(`Sıra nömrəsi 1 ilə ${GROUP_SIZE} arasında olmalıdır.`);
+                return;
+            }
+
+            enterFullscreen(); // istifadəçi klikinin içində çağırılmalıdır (yoxlamadan əvvəl)
+            const btn = $("start-btn");
+            btn.disabled = true;
+            btn.textContent = "Yoxlanılır…";
+            const sessionId = newRecordId();
+            const startedAt = Date.now();
+            const claim = await claimSeat(sessionId, name, sira, startedAt);
+            btn.disabled = false;
+            btn.textContent = "İmtahana başla";
+            if (claim !== "ok") {
+                if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+                showLoginError(claim === "in_use"
+                    ? `${sira} nömrəsi ilə hazırda başqa kompüterdə imtahan yazılır. Bu sizin nömrənizdirsə, imtahan rəhbərinə müraciət edin.`
+                    : `${sira} nömrəsi ilə imtahan artıq verilib. Yenidən başlamaq yalnız imtahan rəhbərinin icazəsi ilə mümkündür — imtahan rəhbərinə müraciət edin.`);
+                return;
+            }
+
+            session = {
+                name, group: GROUP_NAME, sira, variant: variantFor(sira),
+                sessionId,
+                startedAt,
+                violations: 0,
+                log: [],
+                answers: {},
+                status: "active",
+            };
+            saveSession();
+            openExam();
+        }
+
+        function resumeExam() {
+            enterFullscreen();
+            openExam();
+            registerViolation("Səhifə yeniləndi və ya bağlandı.");
+        }
+
+        function openExam() {
+            activeVariant = window.EXAM_DATA.variants[session.variant];
+            renderQuestions();
+
+            $("display-student-name").textContent = session.name;
+            $("display-student-no").textContent = session.sira;
+            $("display-variant").textContent = session.variant;
+            updateViolationsDisplay();
+
+            $("login-screen").style.display = "none";
+            $("resume-screen").style.display = "none";
+            $("statusbar").style.display = "block";
+            $("exam-screen").style.display = "block";
+
+            examActive = true;
+            startTimer();
+            startLiveSync();
+        }
+
+        // ====================================================================
+        // TAPŞIRIQLAR (exam_data.js — tools/build_bank.py ilə yaradılıb)
+        // ====================================================================
+        // Hər tapşırıq ayrıca səhifədədir. Bütün səhifələr bir dəfə yaradılır və sadəcə gizlədilir,
+        // ona görə səhifələr arasında keçəndə yazılanlar itmir.
+        let pages = [];
+        let currentPage = 0;
+
+        function renderQuestions() {
+            const container = $("questions-container");
+            container.innerHTML = "";
+            pages = [];
+            const tasksById = Object.fromEntries(activeVariant.tasks.map(t => [t.id, t]));
+            let sectionHtml = null, fixedCode = null;
+
+            for (const item of activeVariant.items) {
+                if (item.type === "section") {
+                    sectionHtml = item.html;
+                    fixedCode = null;
+                } else if (item.type === "fixed") {
+                    fixedCode = item.code;
+                } else if (item.type === "task") {
+                    const page = document.createElement("div");
+                    page.className = "task-page";
+                    if (sectionHtml) {
+                        const div = document.createElement("div");
+                        div.className = "section-block";
+                        div.innerHTML = `<div class="md">${sectionHtml}</div>`;
+                        page.appendChild(div);
+                    }
+                    if (fixedCode) {
+                        const panel = document.createElement("div");
+                        panel.className = "panel";
+                        panel.innerHTML = `<div class="panel-head"><span class="title">Verilənlər</span><span class="points">dəyişdirilmir</span></div><div class="panel-body"><pre></pre></div>`;
+                        panel.querySelector("pre").textContent = fixedCode;
+                        page.appendChild(panel);
+                    }
+                    page.appendChild(renderTask(tasksById[item.id]));
+                    container.appendChild(page);
+                    pages.push({ id: item.id, task: tasksById[item.id], el: page });
+                }
+            }
+
+            $("page-nav").innerHTML = pages.map((p, i) => `<button class="nav-btn" onclick="showPage(${i})">${p.id}</button>`).join("");
+            showPage(Math.min(session.page || 0, pages.length - 1), false);
+
+            if (window.renderMathInElement) {
+                try {
+                    renderMathInElement(container, {
+                        delimiters: [{ left: "$$", right: "$$", display: true }, { left: "$", right: "$", display: false }],
+                        throwOnError: false,
+                    });
+                } catch (e) {}
+            }
+        }
+
+        function isAnswered(t) {
+            const a = (session.answers || {})[t.id];
+            return t.kind === "code" ? (a !== undefined && a !== t.starter) : String(a || "").trim() !== "";
+        }
+
+        function updateNav() {
+            if (!pages.length) return;
+            const buttons = $("page-nav").children;
+            let answered = 0;
+            pages.forEach((p, i) => {
+                const done = isAnswered(p.task);
+                if (done) answered++;
+                buttons[i].className = "nav-btn" + (done ? " answered" : "") + (i === currentPage ? " current" : "");
+            });
+            $("page-label").textContent = `Tapşırıq ${pages[currentPage].id} — ${currentPage + 1} / ${pages.length}`;
+            $("answered-label").textContent = `Cavab yazılıb: ${answered} / ${pages.length}`;
+            $("prev-btn").disabled = currentPage === 0;
+            $("prev-btn").style.visibility = currentPage === 0 ? "hidden" : "visible";
+            $("next-btn").textContent = currentPage === pages.length - 1 ? "Cavabları təsdiqlə və imtahanı bitir" : "Növbəti tapşırıq →";
+        }
+
+        function showPage(i, scroll = true) {
+            if (!pages.length) return;
+            i = Math.max(0, Math.min(i, pages.length - 1));
+            pages.forEach((p, k) => p.el.classList.toggle("current", k === i));
+            pages[i].el.querySelectorAll(".code-editor").forEach(ed => ed.refresh && ed.refresh());
+            currentPage = i;
+            if (session) { session.page = i; saveSessionSoon(); }
+            updateNav();
+            if (scroll) window.scrollTo(0, 0);
+        }
+
+        function nextOrFinish() {
+            if (currentPage === pages.length - 1) openFinishModal();
+            else showPage(currentPage + 1);
+        }
+
+        function renderTask(t) {
+            const panel = document.createElement("div");
+            panel.className = "panel";
+            panel.id = `card-${t.id}`;
+            const title = t.title.replace(/^(Tapşırıq\s+[A-Z]*\d+\.|Addım\s+\d\.)\s*/, "").replace(/\s*\(\d+\s*bal\)\s*$/, "");
+            panel.innerHTML = `
+                <div class="panel-head">
+                    <div><span class="task-id">${t.id}.</span><span class="title"></span></div>
+                    <span class="points">${t.pts} bal</span>
+                </div>
+                <div class="panel-body">
+                    <div class="md">${t.html}</div>
+                    <div class="answer"></div>
+                </div>`;
+            panel.querySelector(".title").textContent = title;
+            const box = panel.querySelector(".answer");
+            const saved = session.answers[t.id];
+
+            if (t.kind === "code") {
+                let runBtn = null;
+                const editor = createCodeEditor(
+                    saved !== undefined ? saved : t.starter,
+                    (val) => { session.answers[t.id] = val; saveSessionSoon(); },
+                    () => runCell(t.id, runBtn));
+                const ta = editor.textarea;
+                ta.id = `ans-${t.id}`;
+                box.appendChild(editor);
+
+                const hint = document.createElement("div");
+                hint.className = "ce-hint";
+                hint.innerHTML = "<kbd>Shift</kbd>+<kbd>Enter</kbd> — işə sal · Enter-dən sonra girinti avtomatik qoyulur · " +
+                    "<kbd>Tab</kbd> / <kbd>Shift</kbd>+<kbd>Tab</kbd> — girintini artır / azalt · <kbd>Ctrl</kbd>+<kbd>/</kbd> — şərh · " +
+                    "<kbd>Ctrl</kbd>+<kbd>Z</kbd> — geri al";
+                box.appendChild(hint);
+
+                const actions = document.createElement("div");
+                actions.className = "code-actions";
+                actions.innerHTML = `
+                    <button class="btn btn-sm">▶ İşə sal</button>
+                    <button class="btn btn-sm">Kodu yoxla</button>
+                    <button class="btn btn-outline btn-sm">Başlanğıc kodu bərpa et</button>`;
+                const [rBtn, testBtn, resetBtn] = actions.querySelectorAll("button");
+                runBtn = rBtn;
+                runBtn.onclick = () => runCell(t.id, runBtn);
+                testBtn.onclick = () => testTask(t.id, testBtn);
+                resetBtn.onclick = () => {
+                    if (ta.value === t.starter) return;
+                    edReplace(ta, 0, ta.value.length, t.starter, 0, 0);   // Ctrl+Z ilə geri qaytarmaq olur
+                };
+                box.appendChild(actions);
+
+                const cellOut = document.createElement("div");
+                cellOut.id = `out-${t.id}`;
+                cellOut.className = "cell-output";
+                box.appendChild(cellOut);
+
+                const res = document.createElement("div");
+                res.id = `result-${t.id}`;
+                res.className = "result";
+                box.appendChild(res);
+            } else if (t.kind === "number") {
+                const label = document.createElement("label");
+                label.className = "hint";
+                label.style.display = "block";
+                label.style.marginBottom = "5px";
+                label.htmlFor = `ans-${t.id}`;
+                label.textContent = "Cavab (tam ədəd):";
+                const inp = document.createElement("input");
+                inp.type = "text";
+                inp.id = `ans-${t.id}`;
+                inp.className = "single-input";
+                inp.autocomplete = "off";
+                inp.inputMode = "numeric";
+                inp.value = saved || "";
+                inp.addEventListener("input", () => { session.answers[t.id] = inp.value; saveSessionSoon(); });
+                box.append(label, inp);
+            } else if (t.kind === "choice") {
+                const list = document.createElement("div");
+                list.className = "options-list";
+                for (const [key, text] of Object.entries(t.options)) {
+                    const label = document.createElement("label");
+                    label.className = "option-label" + (saved === key ? " selected" : "");
+                    label.innerHTML = `<input type="radio" name="ans-${t.id}" value="${key}"${saved === key ? " checked" : ""}><span class="option-key">${key})</span><span>${text}</span>`;
+                    label.querySelector("input").addEventListener("change", () => {
+                        list.querySelectorAll(".option-label").forEach(l => l.classList.remove("selected"));
+                        label.classList.add("selected");
+                        session.answers[t.id] = key;
+                        saveSessionSoon();
+                    });
+                    list.appendChild(label);
+                }
+                box.appendChild(list);
+            }
+            return panel;
+        }
+
+        // ====================================================================
+        // KOD REDAKTORU (Colab / Jupyter kimi)
+        //  • Enter — girintini saxlayır; ":" ilə bitən sətirdən sonra 4 boşluq artırır,
+        //    return / pass / break / continue / raise-dən sonra bir pillə azaldır
+        //  • else / elif / except / finally yazıb ":" qoyduqda sətir avtomatik geri çəkilir
+        //  • Tab / Shift+Tab — girinti (seçilmiş bütün sətirlər üçün də), Backspace — 4 boşluğu birdən silir
+        //  • ( [ { " ' avtomatik bağlanır; Ctrl+/ — şərh; Shift+Enter / Ctrl+Enter — «İşə sal»
+        //  • Python sintaksisinin rənglənməsi və sətir nömrələri; Ctrl+Z işləyir
+        // ====================================================================
+        const INDENT = 4;
+        const LINE_PX = 20;
+        const OPENERS = { "(": ")", "[": "]", "{": "}" };
+        const CLOSERS = new Set([")", "]", "}"]);
+        const PY_KW = new Set(("False None True and as assert async await break class continue def del elif else except " +
+            "finally for from global if import in is lambda nonlocal not or pass raise return try while with yield").split(" "));
+        const PY_BI = new Set(("abs all any bool dict enumerate filter float input int isinstance len list map max min next " +
+            "object print range repr reversed round set sorted str sum super tuple type zip self deque").split(" "));
+        const PY_TOKEN = /(#[^\n]*)|((?:\b[rRbBuUfF]{1,2})?(?:"""[\s\S]*?(?:"""|(?![\s\S]))|'''[\s\S]*?(?:'''|(?![\s\S]))|"(?:\\.|[^"\\\n])*"?|'(?:\\.|[^'\\\n])*'?))|(\b\d[\d_]*(?:\.\d*)?(?:[eE][+-]?\d+)?j?\b)|(@[\p{L}_][\p{L}\p{N}_]*)|([\p{L}_][\p{L}\p{N}_]*)/gu;
+
+        function escCode(str) {
+            return str.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+        }
+
+        function highlightPython(src) {
+            let out = "", last = 0, prevWord = "", m;
+            PY_TOKEN.lastIndex = 0;
+            while ((m = PY_TOKEN.exec(src))) {
+                const tok = m[0];
+                out += escCode(src.slice(last, m.index));
+                let cls = m[1] ? "cm" : m[2] ? "st" : m[3] ? "nu" : m[4] ? "de" : "";
+                if (m[5]) {
+                    if (prevWord === "def" || prevWord === "class") cls = "fn";
+                    else if (PY_KW.has(tok)) cls = "kw";
+                    else if (PY_BI.has(tok)) cls = "bi";
+                    prevWord = tok;
+                } else {
+                    prevWord = "";
+                }
+                out += cls ? `<span class="${cls}">${escCode(tok)}</span>` : escCode(tok);
+                last = m.index + tok.length;
+            }
+            return out + escCode(src.slice(last));
+        }
+
+        // Mətni əvəz edir və brauzerin «geri al» (Ctrl+Z) tarixçəsini qoruyur
+        function edReplace(el, start, end, text, selStart, selEnd) {
+            if (start === end && !text) return;
+            el.focus();
+            el.setSelectionRange(start, end);
+            let ok = false;
+            try { ok = document.execCommand(text ? "insertText" : "delete", false, text); } catch (err) { ok = false; }
+            if (!ok) {
+                el.setRangeText(text, start, end, "end");
+                el.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+            if (selStart !== undefined) el.setSelectionRange(selStart, selEnd === undefined ? selStart : selEnd);
+        }
+
+        const lineStartAt = (v, pos) => v.lastIndexOf("\n", pos - 1) + 1;
+        const lineEndAt = (v, pos) => { const i = v.indexOf("\n", pos); return i === -1 ? v.length : i; };
+
+        function leadWidth(line) {
+            let w = 0;
+            for (const ch of line) {
+                if (ch === " ") w++;
+                else if (ch === "\t") w += INDENT - (w % INDENT);
+                else break;
+            }
+            return w;
+        }
+
+        // Sətrin əvvəlindən verilmiş yerə qədər: açıq qalmış dırnaq (sətir daxilindəyik) və şərhsiz hissə
+        function scanLine(text) {
+            let q = null;
+            for (let i = 0; i < text.length; i++) {
+                const c = text[i];
+                if (q) {
+                    if (c === "\\") i++;
+                    else if (c === q) q = null;
+                } else if (c === '"' || c === "'") {
+                    q = c;
+                } else if (c === "#") {
+                    return { code: text.slice(0, i), inString: false, inComment: true };
+                }
+            }
+            return { code: text, inString: q !== null, inComment: false };
+        }
+
+        function selectedBlock(el) {
+            const v = el.value;
+            const s = el.selectionStart;
+            let e = el.selectionEnd;
+            if (e > s && v[e - 1] === "\n") e--;
+            const a = lineStartAt(v, s), b = lineEndAt(v, e);
+            return { a, b, lines: v.slice(a, b).split("\n") };
+        }
+
+        function shiftLines(el, dedent) {
+            const s0 = el.selectionStart, e0 = el.selectionEnd;
+            const { a, b, lines } = selectedBlock(el);
+            let firstDelta = 0;
+            const out = lines.map((line, i) => {
+                let d = 0;
+                if (dedent) {
+                    const m = line.match(/^( {1,4}|\t)/);
+                    d = m ? -m[0].length : 0;
+                    line = line.slice(-d);
+                } else if (line.trim() !== "" || lines.length === 1) {
+                    line = " ".repeat(INDENT) + line;
+                    d = INDENT;
+                }
+                if (i === 0) firstDelta = d;
+                return line;
+            });
+            const text = out.join("\n");
+            if (text === lines.join("\n")) return;
+            if (s0 === e0) {
+                const pos = Math.max(a, s0 + firstDelta);
+                edReplace(el, a, b, text, pos, pos);
+            } else {
+                edReplace(el, a, b, text, a, a + text.length);
+            }
+        }
+
+        function toggleComment(el) {
+            const s0 = el.selectionStart, e0 = el.selectionEnd;
+            const { a, b, lines } = selectedBlock(el);
+            const code = lines.filter(l => l.trim());
+            if (!code.length) return;
+            const allCommented = code.every(l => /^\s*#/.test(l));
+            const minInd = Math.min(...code.map(l => l.match(/^\s*/)[0].length));
+            const out = lines.map(l => {
+                if (!l.trim()) return l;
+                if (allCommented) return l.replace(/^(\s*)# ?/, "$1");
+                return l.slice(0, minInd) + "# " + l.slice(minInd);
+            });
+            const text = out.join("\n");
+            if (s0 === e0 && lines.length === 1) {
+                const pos = Math.max(a, s0 + text.length - (b - a));
+                edReplace(el, a, b, text, pos, pos);
+            } else {
+                edReplace(el, a, b, text, a, a + text.length);
+            }
+        }
+
+        // else / elif / except / finally üçün uyğun blokun (if, for, try …) girintisini tapır
+        function blockIndentFor(v, ls, cur, word) {
+            const opener = /^(else|finally)\b/.test(word) ? /^(if|elif|for|while|try|except)\b/
+                : /^elif\b/.test(word) ? /^(if|elif)\b/
+                : /^(try|except)\b/;
+            const lines = v.slice(0, Math.max(0, ls - 1)).split("\n");
+            for (let i = lines.length - 1; i >= 0; i--) {
+                const line = lines[i];
+                if (!line.trim()) continue;
+                const w = leadWidth(line);
+                if (w <= cur && opener.test(line.trim())) return w;
+                if (w < cur) return null;
+            }
+            return null;
+        }
+
+        function editorKeydown(e, el, onRun) {
+            if (e.isComposing || e.keyCode === 229) return;
+            const v = el.value, s = el.selectionStart, en = el.selectionEnd;
+            const ctrl = e.ctrlKey || e.metaKey;
+            const key = e.key;
+
+            // Shift+Enter / Ctrl+Enter — xananı icra et
+            if (key === "Enter" && (e.shiftKey || ctrl)) {
+                e.preventDefault();
+                if (onRun) onRun();
+                return;
+            }
+            // Tab, Shift+Tab, Ctrl+] / Ctrl+[
+            if (key === "Tab" || (ctrl && (key === "]" || key === "["))) {
+                e.preventDefault();
+                const dedent = key === "[" || (key === "Tab" && e.shiftKey);
+                if (key === "Tab" && !dedent && s === en) {
+                    const col = s - lineStartAt(v, s);
+                    edReplace(el, s, en, " ".repeat(INDENT - (col % INDENT)));
+                } else {
+                    shiftLines(el, dedent);
+                }
+                return;
+            }
+            // Ctrl+/ — şərh
+            if (ctrl && (key === "/" || e.code === "Slash")) {
+                e.preventDefault();
+                toggleComment(el);
+                return;
+            }
+            if (ctrl || e.altKey) return;
+
+            // Enter — avtomatik girinti
+            if (key === "Enter") {
+                e.preventDefault();
+                const ls = lineStartAt(v, s);
+                const before = v.slice(ls, s);
+                const after = v.slice(en, lineEndAt(v, en));
+                const code = scanLine(before).code.trimEnd();
+                let ind = leadWidth(before);
+                if (/:$/.test(code)) ind += INDENT;
+                else if (/^\s*(return|pass|break|continue|raise)\b/.test(code) && after.trim() === "") ind = Math.max(0, ind - INDENT);
+                const prevCh = code.slice(-1), nextCh = v[en];
+                if (OPENERS[prevCh] && OPENERS[prevCh] === nextCh) {
+                    const inner = " ".repeat(ind + INDENT), outer = " ".repeat(ind);
+                    edReplace(el, s, en, "\n" + inner + "\n" + outer, s + 1 + inner.length);
+                    return;
+                }
+                if (OPENERS[prevCh]) ind += INDENT;
+                const lead = after.match(/^[ \t]*/)[0].length;   // sətir bölünəndə kursordan sonrakı boşluqlar atılır
+                edReplace(el, s, en + lead, "\n" + " ".repeat(ind));
+                return;
+            }
+
+            // Backspace — girintini 4 boşluq silir; boş mötərizə / dırnaq cütünü birlikdə silir
+            if (key === "Backspace") {
+                if (s !== en || s === 0) return;
+                const ls = lineStartAt(v, s);
+                const before = v.slice(ls, s);
+                if (before.length && /^ +$/.test(before)) {
+                    e.preventDefault();
+                    edReplace(el, s - (((before.length - 1) % INDENT) + 1), s, "");
+                    return;
+                }
+                const p = v[s - 1], nx = v[s];
+                if ((OPENERS[p] && OPENERS[p] === nx) || ((p === '"' || p === "'") && nx === p && v[s - 2] !== p)) {
+                    e.preventDefault();
+                    edReplace(el, s - 1, s + 1, "");
+                }
+                return;
+            }
+
+            if (key.length !== 1) return;
+
+            // Bağlanan mötərizənin üzərindən keçmək
+            if (CLOSERS.has(key) && s === en && v[s] === key) {
+                e.preventDefault();
+                el.setSelectionRange(s + 1, s + 1);
+                return;
+            }
+            // ( [ { — avtomatik bağlanır
+            if (OPENERS[key]) {
+                const before = v.slice(lineStartAt(v, s), s);
+                if (scanLine(before).inString || scanLine(before).inComment) return;
+                if (s !== en) {
+                    e.preventDefault();
+                    const sel = v.slice(s, en);
+                    edReplace(el, s, en, key + sel + OPENERS[key], s + 1, s + 1 + sel.length);
+                    return;
+                }
+                const nx = v[en] || "";
+                if (nx === "" || /[\s)\]},:;]/.test(nx)) {
+                    e.preventDefault();
+                    edReplace(el, s, en, key + OPENERS[key], s + 1);
+                }
+                return;
+            }
+            // " ' — avtomatik bağlanır
+            if (key === '"' || key === "'") {
+                const before = v.slice(lineStartAt(v, s), s);
+                const st = scanLine(before);
+                if (st.inComment) return;
+                if (s !== en) {
+                    e.preventDefault();
+                    const sel = v.slice(s, en);
+                    edReplace(el, s, en, key + sel + key, s + 1, s + 1 + sel.length);
+                    return;
+                }
+                if (st.inString) {
+                    if (v[s] === key) { e.preventDefault(); el.setSelectionRange(s + 1, s + 1); }
+                    return;
+                }
+                const prev = v[s - 1] || "", nx = v[s] || "";
+                const isPrefix = /(^|[^\p{L}\p{N}_])[rRbBfFuU]{1,2}$/u.test(before);
+                if (before.endsWith(key + key)) return;                       // üçqat dırnaq """
+                if (/[\p{L}\p{N}_]/u.test(prev) && !isPrefix) return;
+                if (/[\p{L}\p{N}_]/u.test(nx)) return;
+                e.preventDefault();
+                edReplace(el, s, en, key + key, s + 1);
+                return;
+            }
+            // else: / elif …: / except …: / finally: — sətri uyğun bloka geri çək
+            if (key === ":" && s === en) {
+                const ls = lineStartAt(v, s);
+                const before = v.slice(ls, s);
+                const after = v.slice(s, lineEndAt(v, s));
+                const m = before.match(/^([ \t]*)(else|finally|elif\b.*|except\b.*)$/);
+                if (m && after.trim() === "" && !scanLine(before).inString) {
+                    const cur = leadWidth(m[1]);
+                    const target = blockIndentFor(v, ls, cur, m[2]);
+                    if (target !== null && target < cur) {
+                        e.preventDefault();
+                        const line = " ".repeat(target) + before.trimStart() + ":";
+                        edReplace(el, ls, s, line, ls + line.length);
+                    }
+                }
+            }
+        }
+
+        function createCodeEditor(initial, onChange, onRun) {
+            const wrap = document.createElement("div");
+            wrap.className = "code-editor";
+            wrap.innerHTML = '<div class="ce-gutter" aria-hidden="true"></div>' +
+                '<div class="ce-main"><pre class="ce-hl" aria-hidden="true"></pre>' +
+                '<textarea class="code-input" spellcheck="false" autocomplete="off" autocapitalize="off" wrap="off"></textarea></div>';
+            const gutter = wrap.querySelector(".ce-gutter");
+            const hl = wrap.querySelector(".ce-hl");
+            const ta = wrap.querySelector("textarea");
+            ta.setAttribute("autocorrect", "off");
+            ta.value = initial;
+
+            const refresh = () => {
+                const v = ta.value;
+                hl.innerHTML = highlightPython(v) + "\n";
+                const n = v.split("\n").length;
+                gutter.textContent = Array.from({ length: n }, (_, i) => i + 1).join("\n");
+                ta.style.height = (Math.max(n, 6) * LINE_PX + 20) + "px";
+                ta.style.width = "100%";
+                if (ta.scrollWidth > ta.clientWidth + 1) ta.style.width = (ta.scrollWidth + 24) + "px";
+            };
+            ta.addEventListener("input", () => { refresh(); onChange(ta.value); });
+            ta.addEventListener("keydown", (e) => editorKeydown(e, ta, onRun));
+            wrap.refresh = refresh;
+            wrap.textarea = ta;
+            refresh();
+            return wrap;
+        }
+
+        // «▶ İşə sal» — yalnız bu xananı Colab-dakı kimi icra edir (bal hesablanmır)
+        async function runCell(taskId, btn) {
+            const box = $(`out-${taskId}`);
+            const ta = $(`ans-${taskId}`);
+            if (!box || !ta) return;
+            if (btn) btn.disabled = true;
+            box.className = "cell-output show";
+            box.innerHTML = '<div class="co-head"></div><pre></pre>';
+            const head = box.querySelector(".co-head"), pre = box.querySelector("pre");
+            head.textContent = py.state === "ready" ? "İcra olunur…" : "Python mühiti yüklənir, gözləyin…";
+            try {
+                const ready = await waitForPython(60000);
+                if (!ready) throw new Error("Python mühiti yüklənmədi. İnternet bağlantısını yoxlayın və ya imtahan rəhbərinə müraciət edin.");
+                const r = await runPython({ mode: "cell", code: ta.value, budget: 10 }, 60000);
+                head.textContent = r.error ? "Nəticə (xəta ilə)" : "Nəticə";
+                pre.textContent = r.output || (r.error ? "" : "(heç nə çap olunmadı)");
+                if (r.error) {
+                    const err = document.createElement("span");
+                    err.className = "co-err";
+                    err.textContent = (r.output && !r.output.endsWith("\n") ? "\n" : "") + r.error;
+                    pre.appendChild(err);
+                }
+            } catch (e) {
+                head.textContent = "Xəta";
+                pre.className = "co-err";
+                pre.textContent = e.message;
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        // Yapışdırma: tab→4 boşluq, CRLF→LF və çoxsətirli blokun girintisi kursorun olduğu səviyyəyə uyğunlaşdırılır
+        function smartPaste(ta, text, partial) {
+            text = text.replace(/\r\n?/g, "\n").replace(/\t/g, "    ").replace(/[ ​﻿]/g, (c) => c === " " ? " " : "");
+            const v = ta.value, s = ta.selectionStart, en = ta.selectionEnd;
+            const lines = text.split("\n");
+            if (lines.length === 1) return edReplace(ta, s, en, text);
+            const lineStart = v.lastIndexOf("\n", s - 1) + 1;
+            const before = v.slice(lineStart, s);
+            if (!/^ *$/.test(before)) return edReplace(ta, s, en, text);       // sətrin ortasına yapışdırılır — olduğu kimi
+            // ortaq girintini götür (kopyalama ortada başlayıbsa, ilk sətir sayılmır)
+            const body = partial ? lines.slice(1) : lines;
+            const ind = Math.min(...body.filter(l => l.trim()).map(l => l.match(/^ */)[0].length), 1e9);
+            const cut = ind === 1e9 ? 0 : ind;
+            const dedented = lines.map((l, i) => (partial && i === 0) ? l : l.slice(Math.min(cut, l.match(/^ */)[0].length)));
+            // hədəf səviyyə: kursorun girintisi; boş sətirdə isə əvvəlki sətirdən (":" ilə bitirsə +4) götürülür
+            let base = before;
+            if (before.length === 0) {
+                const prev = v.slice(0, Math.max(0, lineStart - 1)).split("\n").filter(l => l.trim()).pop() || "";
+                base = prev.match(/^ */)[0] + (/:\s*$/.test(prev.replace(/#.*$/, "")) ? "    " : "");
+                if (!lines[0].trim() ) base = before;
+            }
+            const out = dedented.map((l, i) => (i === 0 ? l : (l.trim() ? base + l : l))).join("\n");
+            const pad = before.length === 0 ? base : "";
+            return edReplace(ta, s, en, pad + out);
+        }
+
+        function collectAnswers() {
+            const answers = {};
+            const saved = (session && session.answers) || {};
+            for (const t of activeVariant.tasks) {
+                if (t.kind === "choice") {
+                    const checked = document.querySelector(`input[name="ans-${t.id}"]:checked`);
+                    answers[t.id] = checked ? checked.value : (saved[t.id] || "");
+                } else {
+                    const el = $(`ans-${t.id}`);
+                    answers[t.id] = el ? el.value : (saved[t.id] ?? t.starter ?? "");
+                }
+            }
+            return answers;
+        }
+
+        // ====================================================================
+        // "KODU YOXLA" — tələbənin kodunu bank testi ilə yoxlayır (tam və ya qismən bal)
+        // ====================================================================
+        async function testTask(taskId, btn) {
+            const res = $(`result-${taskId}`);
+            btn.disabled = true;
+            res.className = "result info";
+            res.textContent = py.state === "ready" ? "Yoxlanılır…" : "Yoxlama sistemi yüklənir, gözləyin…";
+            try {
+                const ready = await waitForPython(60000);
+                if (!ready) throw new Error("Yoxlama sistemi yüklənmədi. İnternet bağlantısını yoxlayın və ya imtahan rəhbərinə müraciət edin.");
+                const out = await runPython({ steps: activeVariant.steps, answers: collectAnswers(), upto: taskId, budget: 10 }, 60000);
+                const r = out.results[taskId];
+                if (!r) throw new Error("Yoxlama nəticəsi alınmadı.");
+                session.tested = session.tested || {};
+                session.tested[taskId] = r.ok;
+                saveSessionSoon();
+                // Qismən düzgün (0 < bal < maks) nəticə: sarı/informasiya rəngi, ödənməyən hissələr göstərilir
+                res.className = "result " + (r.ok ? "ok" : (r.partial ? "partial" : "bad"));
+                res.innerHTML = `<div class="head"></div>${r.ok ? "" : '<div class="detail"></div>'}`;
+                res.querySelector(".head").textContent = plainMsg(r.msg);
+                if (!r.ok) res.querySelector(".detail").textContent = (r.partial ? "" : "Səbəb: ") + r.detail;
+                const printed = (out.output || {})[taskId];
+                if (printed && printed.trim()) {
+                    const pre = document.createElement("pre");
+                    pre.textContent = printed;
+                    res.appendChild(pre);
+                }
+            } catch (e) {
+                res.className = "result bad";
+                res.textContent = e.message;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // ====================================================================
+        // VAXT
+        // ====================================================================
+        function remainingSeconds() {
+            return Math.max(0, EXAM_DURATION_SEC - Math.floor((Date.now() - session.startedAt) / 1000));
+        }
+
+        function startTimer() {
+            const display = $("timer-display");
+            const tick = () => {
+                const left = remainingSeconds();
+                const m = Math.floor(left / 60), s = left % 60;
+                display.textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+                if (left < 300) display.style.color = "var(--bad)";
+                if (left <= 0) {
+                    clearInterval(timerInterval);
+                    finishExam("VAXT_BİTDİ");
+                }
+            };
+            clearInterval(timerInterval);
+            tick();
+            timerInterval = setInterval(tick, 1000);
+        }
+
+        // ====================================================================
+        // QAYDA POZUNTULARI (3 XƏBƏRDARLIQ)
+        // Qeyd: Alt+Tab əməliyyat sistemi səviyyəsindədir, brauzer onu bloklaya bilməz,
+        // lakin pəncərənin fokusu itdiyi üçün dərhal aşkarlanır və pozuntu sayılır.
+        // ====================================================================
+        const fullscreenSupported = !!(document.documentElement.requestFullscreen && document.fullscreenEnabled !== false);
+        let fullscreenDenied = false; // brauzer tam ekrana icazə vermirsə tələbəni bloklamırıq, qeyd edirik
+
+        function enterFullscreen() {
+            $("fullscreen-gate").style.display = "none";
+            const el = document.documentElement;
+            if (el.requestFullscreen && !document.fullscreenElement) {
+                el.requestFullscreen().then(() => { fullscreenDenied = false; }).catch(err => {
+                    console.log("Fullscreen alınmadı:", err);
+                    if (!fullscreenDenied && session && examActive) {
+                        session.log.push({ t: new Date().toISOString(), reason: "Brauzer tam ekran rejiminə icazə vermədi", counted: false });
+                        saveSessionSoon();
+                    }
+                    fullscreenDenied = true;
+                });
+            }
+        }
+
+        function registerViolation(reasonText) {
+            if (!examActive || submitting) return;
+            const now = Date.now();
+            if (warningModalOpen || now - lastViolationAt < 1500) return; // bir hadisə = bir pozuntu
+            lastViolationAt = now;
+
+            session.violations += 1;
+            session.log.push({ t: new Date().toISOString(), reason: reasonText, counted: true });
+            saveSession();
+            liveSync();
+            playAlertSound();
+            updateViolationsDisplay();
+            $("fullscreen-gate").style.display = "none";
+            $("finish-overlay").style.display = "none";
+            warningModalOpen = true;
+
+            const remaining = MAX_VIOLATIONS - session.violations;
+            if (remaining <= 0) {
+                $("warning-title-text").textContent = "İmtahan ləğv edildi";
+                $("warning-desc-text").textContent = `${reasonText} Bu, üçüncü qayda pozuntusudur. İmtahanınız dayandırıldı və nəticəniz 0 bal kimi qeydə alındı.`;
+                $("warning-remaining-text").textContent = "Xəbərdarlıq: 3 / 3";
+                $("warning-btn").style.display = "none";
+                $("warning-overlay").style.display = "flex";
+                finishExam("KƏNARLAŞDIRILDI_3_HAQQ");
+            } else {
+                $("warning-title-text").textContent = "Qayda pozuntusu qeydə alındı";
+                $("warning-desc-text").textContent = `${reasonText} Daha ${remaining} pozuntuda imtahanınız avtomatik ləğv ediləcək.`;
+                $("warning-remaining-text").textContent = `Xəbərdarlıq: ${session.violations} / ${MAX_VIOLATIONS}`;
+                $("warning-btn").style.display = "";
+                $("warning-overlay").style.display = "flex";
+            }
+        }
+
+        // Pozuntu sayılmayan, lakin qeydə alınan cəhdlər (tərtibatçı alətləri, kopyalama və s.)
+        function logBlockedAttempt(what) {
+            showToast(`${what} imtahan zamanı qadağandır.`);
+            if (session && examActive) {
+                session.log.push({ t: new Date().toISOString(), reason: what, counted: false });
+                saveSessionSoon();
+            }
+        }
+
+        function dismissWarning() {
+            $("warning-overlay").style.display = "none";
+            warningModalOpen = false;
+            lastViolationAt = Date.now();
+            enterFullscreen();
+        }
+
+        function updateViolationsDisplay() {
+            const v = session ? Math.min(session.violations, 3) : 0;
+            const el = $("violations-display");
+            el.className = "violations v" + v;
+            el.querySelector("b").textContent = `${v} / ${MAX_VIOLATIONS}`;
+        }
+
+        function playAlertSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = "sawtooth";
+                osc.frequency.setValueAtTime(440, ctx.currentTime);
+                osc.frequency.setValueAtTime(220, ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.35);
+            } catch (e) {}
+        }
+
+        // 1. Başqa taba keçmə / brauzeri kiçiltmə
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) registerViolation("İmtahan səhifəsindən çıxdınız (başqa tab və ya brauzerin kiçildilməsi).");
+        });
+        // 2. Başqa pəncərəyə / proqrama keçmə (Alt+Tab)
+        window.addEventListener("blur", () => {
+            registerViolation("Brauzer pəncərəsindən kənara çıxdınız (başqa proqram və ya Alt+Tab).");
+        });
+        // 3. Tam ekrandan çıxma
+        document.addEventListener("fullscreenchange", () => {
+            if (!document.fullscreenElement) registerViolation("Tam ekran rejimindən çıxdınız.");
+        });
+        // Tam ekran deyilsə imtahanı bağla (pozuntu kimi sayılmır)
+        setInterval(() => {
+            if (examActive && !submitting && fullscreenSupported && !fullscreenDenied && !document.fullscreenElement && !warningModalOpen) {
+                $("fullscreen-gate").style.display = "flex";
+            }
+        }, 1500);
+
+        // 4. Sağ klik və sürüklə-burax bloklanır
+        for (const [evt, label] of [["contextmenu", "Sağ klik"], ["drop", "Sürüklə-burax"], ["dragstart", "Sürüklə-burax"]]) {
+            document.addEventListener(evt, (e) => {
+                e.preventDefault();
+                logBlockedAttempt(label);
+            }, true);
+        }
+
+        // 4a. Ctrl+C / Ctrl+X / Ctrl+V yalnız imtahanın DAXİLİNDƏ işləyir.
+        //     Kopyalanan mətn səhifənin öz yaddaşında saxlanılır, sistemin mübadilə buferinə getmir
+        //     (kənara — məs. süni intellektə — köçürmək olmur). Yapışdırma yalnız bu yaddaşdan edilir
+        //     (kənardan gətirilmiş mətn qəbul edilmir və jurnala yazılır).
+        let examClipboard = "";
+        let examClipboardPartial = false;   // kopyalama sətrin ortasından başlayıb (ilk sətirdə girinti yoxdur)
+
+        function editableTarget() {
+            const el = document.activeElement;
+            return el && (el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && el.type === "text")) ? el : null;
+        }
+
+        function insertAtCursor(el, text) {
+            edReplace(el, el.selectionStart, el.selectionEnd, text);   // Ctrl+Z ilə geri qaytarmaq olur
+        }
+
+        function handleCopy(e, isCut) {
+            e.preventDefault();
+            try { e.clipboardData.setData("text/plain", ""); } catch (err) {}   // sistem buferinə heç nə getmir
+            const el = editableTarget();
+            if (!el) {
+                // Tapşırığın şərtindən (mətn, kod nümunəsi, verilənlər) seçilmiş hissə — yalnız imtahanın yaddaşına
+                const sel = window.getSelection();
+                const box = $("questions-container");
+                if (sel && !sel.isCollapsed && box.contains(sel.anchorNode) && box.contains(sel.focusNode)) {
+                    examClipboard = sel.toString();
+                    examClipboardPartial = false;
+                } else if (sel && !sel.isCollapsed) {
+                    logBlockedAttempt("Səhifədən mətn kopyalamaq");
+                }
+                return;
+            }
+            if (el.selectionStart === el.selectionEnd) return;
+            examClipboard = el.value.slice(el.selectionStart, el.selectionEnd);
+            const _ls = el.value.lastIndexOf("\n", el.selectionStart - 1) + 1;
+            examClipboardPartial = /\S/.test(el.value.slice(_ls, el.selectionStart));
+            if (isCut) insertAtCursor(el, "");
+        }
+
+        document.addEventListener("copy", (e) => handleCopy(e, false), true);
+        document.addEventListener("cut", (e) => handleCopy(e, true), true);
+        document.addEventListener("paste", (e) => {
+            e.preventDefault();
+            const el = editableTarget();
+            const external = e.clipboardData ? e.clipboardData.getData("text/plain") : "";
+            if (external && external !== examClipboard) logBlockedAttempt("Kənardan mətn yapışdırmaq");
+            if (el && examClipboard) {
+                if (el.classList.contains("code-input")) smartPaste(el, examClipboard, examClipboardPartial);
+                else insertAtCursor(el, examClipboard);
+            }
+        }, true);
+
+        // 5. Tərtibatçı alətləri və mübadilə buferi qısayolları
+        window.addEventListener("keydown", (e) => {
+            const ctrl = e.ctrlKey || e.metaKey;
+            const code = e.code || "";
+            const devtools =
+                e.key === "F12" ||
+                (ctrl && e.shiftKey && ["KeyI", "KeyJ", "KeyC", "KeyK"].includes(code)) ||   // Ctrl+Shift+I/J/C/K
+                (e.metaKey && e.altKey && ["KeyI", "KeyJ", "KeyC"].includes(code)) ||       // macOS Cmd+Opt+I/J/C
+                (ctrl && ["KeyU", "KeyS", "KeyP"].includes(code));                         // mənbə kodu, saxla, çap
+            if (devtools) {
+                e.preventDefault();
+                e.stopPropagation();
+                logBlockedAttempt("Tərtibatçı alətləri və mənbə koduna baxış");
+                return;
+            }
+        }, true);
+
+        // 6. Səhifəni bağlamaq / yeniləmək istədikdə xəbərdarlıq
+        window.addEventListener("beforeunload", (e) => {
+            if (examActive && !submitting) {
+                e.preventDefault();
+                e.returnValue = "";
+            }
+        });
+
+        // ====================================================================
+        // BİTİRMƏ, QİYMƏTLƏNDİRMƏ VƏ GÖNDƏRMƏ
+        // ====================================================================
+        function openFinishModal() {
+            const answers = collectAnswers();
+            const empty = activeVariant.tasks.filter(t => t.kind !== "code" && !String(answers[t.id] || "").trim()).map(t => t.id);
+            $("finish-desc").textContent = (empty.length ? `Cavablandırılmamış tapşırıqlar: ${empty.join(", ")}. ` : "") +
+                "Təsdiqlədikdən sonra cavablarınızı dəyişə bilməyəcəksiniz.";
+            warningModalOpen = true; // modal açıq olarkən blur pozuntu sayılmasın
+            $("finish-overlay").style.display = "flex";
+        }
+
+        function closeFinishModal() {
+            $("finish-overlay").style.display = "none";
+            warningModalOpen = false;
+        }
+
+        function confirmFinishExam() {
+            $("finish-confirm-btn").disabled = true;
+            finishExam("TAMAMLANDI");
+        }
+
+        // Yoxlama sistemi əlçatan olmadıqda nəzəri (test) tapşırıqlarını JavaScript ilə (eyni SHA-256 heşləri ilə) yoxlayır
+        function gradeChoiceAnswersInJs(answers) {
+            const hashes = {};
+            for (const st of activeVariant.steps) {
+                if (st.k !== "test") continue;
+                const m = st.code.match(/_h\((\w+)\)\s*==\s*"([0-9a-f]{64})"/);
+                if (m) hashes[st.ids[0]] = m[2];
+            }
+            const results = {};
+            for (const t of activeVariant.tasks) {
+                if (t.kind === "code" || !hashes[t.id]) continue;
+                let v = String(answers[t.id] || "").trim();
+                if (/^[+-]?\d+$/.test(v)) v = String(parseInt(v, 10));
+                const ok = v !== "" && sha256Hex(v.toLowerCase()) === hashes[t.id];
+                results[t.id] = { ok, pts: ok ? t.pts : 0, max: t.pts };
+            }
+            return results;
+        }
+
+        async function finishExam(finalStatus) {
+            if (submitting) return;
+            submitting = true;
+            examActive = false;
+            clearInterval(timerInterval);
+            $("finish-overlay").style.display = "none";
+            $("fullscreen-gate").style.display = "none";
+
+            const answers = collectAnswers();
+            session.answers = answers;
+            session.status = "grading";
+            saveSession();
+
+            const scores = {};
+            let grading = "avtomatik (Python)";
+            let total = 0;
+
+            if (finalStatus === "KƏNARLAŞDIRILDI_3_HAQQ") {
+                grading = "yoxlanmadı (3 xəbərdarlıq)";
+                await new Promise(r => setTimeout(r, 2500)); // xəbərdarlığı oxumağa vaxt
+            } else {
+                showGradingScreen();
+                let results;
+                try {
+                    const ready = await waitForPython(45000);
+                    if (!ready) throw new Error("Yoxlama sistemi hazır deyil");
+                    const out = await runPython({ steps: activeVariant.steps, answers, budget: 10 }, 240000);
+                    results = out.results;
+                } catch (e) {
+                    console.error("Qiymətləndirmə xətası:", e);
+                    results = gradeChoiceAnswersInJs(answers);
+                    grading = "qismən: kod tapşırıqları yoxlanmadı (yeniden_qiymetlendir.py ilə yoxlayın)";
+                }
+                for (const t of activeVariant.tasks) {
+                    scores[t.id] = results[t.id] ? results[t.id].pts : 0;
+                    total += scores[t.id];
+                }
+            }
+
+            if (!session.recordId) session.recordId = newRecordId();
+            const record = {
+                id: session.recordId,
+                student_name: session.name,
+                student_group: session.group || GROUP_NAME,
+                student_id: String(session.sira),
+                variant: activeVariant.name,
+                score: finalStatus === "KƏNARLAŞDIRILDI_3_HAQQ" ? 0 : total,
+                max_score: activeVariant.max_score,
+                violations: session.violations,
+                status: finalStatus,
+                answers,
+                breakdown: {
+                    scores,
+                    grading,
+                    started_at: new Date(session.startedAt).toISOString(),
+                    finished_at: new Date().toISOString(),
+                    violation_log: session.log,
+                },
+            };
+
+            session.status = "finished";
+            session.record = record;
+            session.uploaded = false;
+            saveSession();
+
+            try {
+                const hist = JSON.parse(localStorage.getItem("exam_local_submissions") || "[]");
+                hist.push({ ...record, created_at: new Date().toISOString() });
+                localStorage.setItem("exam_local_submissions", JSON.stringify(hist));
+            } catch (e) {}
+
+            if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+            showCompleteScreen();
+            uploadRecord();
+            clearInterval(liveInterval);
+            liveSync();
+        }
+
+        function showScreen(id) {
+            for (const s of ["login-screen", "resume-screen", "exam-screen", "complete-screen"]) $(s).style.display = s === id ? "block" : "none";
+            $("statusbar").style.display = id === "exam-screen" ? "block" : "none";
+        }
+
+        function showGradingScreen() {
+            showScreen("complete-screen");
+            $("complete-title").textContent = "Cavablar yoxlanılır";
+            $("complete-desc").textContent = "Zəhmət olmasa gözləyin və səhifəni bağlamayın.";
+            $("complete-table").style.display = "none";
+            $("upload-status").style.display = "none";
+        }
+
+        function showCompleteScreen() {
+            const r = session.record;
+            showScreen("complete-screen");
+            $("warning-overlay").style.display = "none";
+            $("teacher-reset").style.display = "";
+            $("complete-table").style.display = "";
+            $("upload-status").style.display = "";
+
+            $("res-name").textContent = r.student_name;
+            $("res-no").textContent = r.student_id;
+            $("res-variant").textContent = r.variant;
+            $("display-final-score").textContent = `${r.score} / ${r.max_score}`;
+
+            if (r.status === "KƏNARLAŞDIRILDI_3_HAQQ") {
+                $("complete-title").textContent = "İmtahan ləğv edildi";
+                $("complete-title").style.color = "var(--bad)";
+                $("complete-desc").textContent = "Üç dəfə qayda pozuntusu qeydə alındığı üçün imtahanınız dayandırıldı və nəticəniz 0 bal kimi qeydə alındı.";
+                $("display-violations-final").textContent = "3 (imtahandan kənarlaşdırıldı)";
+            } else {
+                $("complete-title").textContent = r.status === "VAXT_BİTDİ" ? "İmtahan vaxtı bitdi" : "İmtahan başa çatdı";
+                $("complete-desc").textContent = r.status === "VAXT_BİTDİ"
+                    ? "Ayrılmış vaxt bitdiyi üçün cavablarınız avtomatik qəbul edildi və qiymətləndirildi."
+                    : "Cavablarınız qəbul edildi və qiymətləndirildi.";
+                $("display-violations-final").textContent = String(r.violations);
+            }
+            renderUploadStatus();
+        }
+
+        function renderUploadStatus() {
+            const el = $("upload-status");
+            if (!supabaseClient) {
+                el.className = "result info";
+                el.textContent = "Nəticə yalnız bu kompüterdə saxlanıldı. İmtahan rəhbərinə bildirin.";
+            } else if (session.uploaded) {
+                el.className = "result ok";
+                el.textContent = "Nəticəniz imtahan rəhbərinə göndərildi.";
+            } else {
+                el.className = "result bad";
+                el.textContent = "Nəticə hələ göndərilməyib. Sistem bağlantını yoxlayır və avtomatik yenidən cəhd edir — səhifəni bağlamayın.";
+            }
+        }
+
+        // Nəticənin gizli identifikatoru: müəllim onu ləğv etsə, bu kompüter bunu öyrənə bilsin
+        function newRecordId() {
+            if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+            const b = crypto.getRandomValues(new Uint8Array(16));
+            b[6] = (b[6] & 0x0f) | 0x40;
+            b[8] = (b[8] & 0x3f) | 0x80;
+            const h = [...b].map(x => x.toString(16).padStart(2, "0")).join("");
+            return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+        }
+
+        // Müəllim paneldən "Yenidən başlat" etdikdə tələbənin ekranı avtomatik giriş ekranına qayıdır
+        let resetWatchTimer = null;
+        function watchForReset() {
+            clearInterval(resetWatchTimer);
+            const check = async () => {
+                if (!supabaseClient || !session || !session.uploaded || !session.record) return;
+                try {
+                    let wasReset = false;
+                    if (session.record.id) {
+                        const { data, error } = await supabaseClient.rpc("submission_was_reset", { p_id: session.record.id });
+                        wasReset = !error && data === true;
+                    } else {
+                        // Köhnə versiya ilə göndərilmiş nəticə (id yoxdur): nömrə boşaldılıbsa, müəllim ləğv edib
+                        const { data, error } = await supabaseClient.rpc("seat_is_taken", {
+                            p_group: session.record.student_group || GROUP_NAME, p_sira: String(session.record.student_id) });
+                        wasReset = !error && data === false;
+                    }
+                    if (wasReset) {
+                        clearInterval(resetWatchTimer);
+                        localStorage.removeItem(SESSION_KEY);
+                        try { sessionStorage.setItem("sdf1_reset_notice", "1"); } catch (e) {}
+                        location.reload();
+                    }
+                } catch (e) {}
+            };
+            resetCheck = check;
+            check();
+            resetWatchTimer = setInterval(check, 10000);
+        }
+
+        let uploadRetryTimer = null;
+        async function uploadRecord() {
+            if (!supabaseClient || !session || !session.record || session.uploaded) {
+                renderUploadStatus();
+                if (session && session.uploaded) watchForReset();
+                return;
+            }
+            try {
+                const { error } = await supabaseClient.from("exam_submissions").insert([session.record]);
+                if (error && error.code !== "23505") throw error; // 23505: artıq göndərilib (təkrar cəhd)
+                session.uploaded = true;
+                saveSession();
+                watchForReset();
+            } catch (err) {
+                console.error("Supabase insert xətası:", err);
+                clearTimeout(uploadRetryTimer);
+                uploadRetryTimer = setTimeout(uploadRecord, 10000);
+            }
+            renderUploadStatus();
+        }
+
+        // İmtahan rəhbəri eyni kompüterdə növbəti tələbə üçün sessiyanı sıfırlaya bilər
+        function teacherReset() {
+            const pass = prompt("Müəllim şifrəsi:");
+            if (!pass) return;
+            if (sha256Hex(pass.trim()) !== ADMIN_HASH) {
+                alert("Şifrə yanlışdır.");
+                return;
+            }
+            if (session && session.record && !session.uploaded && supabaseClient &&
+                !confirm("Bu nəticə hələ bazaya göndərilməyib. Yenə də sıfırlansın?")) return;
+            localStorage.removeItem(SESSION_KEY);
+            location.reload();
+        }
+
+        // ====================================================================
+        // İLK YÜKLƏNMƏ
+        // ====================================================================
+        (function init() {
+            if (!window.EXAM_DATA) {
+                $("login-screen").innerHTML = '<div class="panel"><div class="panel-body">exam_data.js faylı tapılmadı. Bütün faylların eyni qovluqda olduğunu yoxlayın.</div></div>';
+                return;
+            }
+            startPython();
+            setupRealtime();
+
+            try {
+                if (sessionStorage.getItem("sdf1_released_notice")) {
+                    sessionStorage.removeItem("sdf1_released_notice");
+                    const n = $("login-notice");
+                    n.textContent = "İmtahan rəhbəri bu kompüterdəki imtahanı dayandırdı və nömrəni azad etdi.";
+                    n.style.display = "block";
+                }
+                if (sessionStorage.getItem("sdf1_reset_notice")) {
+                    sessionStorage.removeItem("sdf1_reset_notice");
+                    const n = $("login-notice");
+                    n.textContent = "İmtahan rəhbəri imtahanınızı yenidən başlatdı. Məlumatlarınızı daxil edib imtahana yenidən başlayın.";
+                    n.style.display = "block";
+                }
+            } catch (e) {}
+
+            session = loadSession();
+            if (!session) return;
+
+            if (session.status === "active" || session.status === "grading") {
+                activeVariant = window.EXAM_DATA.variants[session.variant];
+                if (session.violations >= MAX_VIOLATIONS) {
+                    examActive = true;
+                    finishExam("KƏNARLAŞDIRILDI_3_HAQQ");
+                    return;
+                }
+                const left = remainingSeconds();
+                if (left <= 0) {
+                    renderQuestions();
+                    examActive = true;
+                    finishExam("VAXT_BİTDİ");
+                    return;
+                }
+                showScreen("resume-screen");
+                $("resume-desc").innerHTML = `${escapeHtml(session.name)}, sıra № ${session.sira}. Qalan vaxt: ${Math.floor(left / 60)} dəqiqə.<br>` +
+                    `<b style="color: var(--bad);">Səhifənin yenilənməsi qayda pozuntusu kimi qeydə alınır.</b> Hazırkı xəbərdarlıq sayı: ${session.violations} / ${MAX_VIOLATIONS}.`;
+            } else if (session.status === "finished" && session.record) {
+                activeVariant = window.EXAM_DATA.variants[session.variant];
+                showCompleteScreen();
+                uploadRecord();
+            }
+        })();
+    </script>
+</body>
+</html>
